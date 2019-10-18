@@ -1,0 +1,15 @@
+id: alien4cloud-datagouv_mls-plugin
+name: Datagouv-MLS plugin
+version: ${project.version}
+description: >
+  This plugin publishes info to Datagouv-MLS
+configuration_class: org.alien4cloud.plugin.datagouv_mls.PluginConfiguration
+component_descriptors:
+  - bean_name: datagouv_mls-module-import
+    name: Datagouv-MLS / modules import
+    description: >
+      Plugin that publishes info about imported modules
+  - bean_name: datagouv_mls-module-delete
+    name: Datagouv-MLS / modules delete
+    description: >
+      Plugin that publishes info about deleted modules
