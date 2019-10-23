@@ -13,3 +13,7 @@ component_descriptors:
     name: Datagouv-MLS / modules delete
     description: >
       Plugin that publishes info about deleted modules
+  - bean_name: datagouv_mls-modifier
+    name: Datagouv-MLS / applications activation
+    description: >
+      Plugin that publishes info about applications activation

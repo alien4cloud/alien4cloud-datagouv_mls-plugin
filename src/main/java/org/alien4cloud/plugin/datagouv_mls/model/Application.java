@@ -1,6 +1,7 @@
 package org.alien4cloud.plugin.datagouv_mls.model;
 
 import java.util.List;
+import java.util.Map;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -11,14 +12,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @Setter
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class Entity {
+public class Application {
 
-   String typeName;
+   List<Entity> entities;
 
-   String guid;
-
-   Attributes attributes;
-
-   List<Classification> classifications;
+   Map<String,Entity> referredEntities;
 
 }

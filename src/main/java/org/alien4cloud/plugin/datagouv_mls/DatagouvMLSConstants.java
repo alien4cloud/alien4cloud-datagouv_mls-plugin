@@ -10,4 +10,7 @@ public class DatagouvMLSConstants {
     // type name for generated JSON
     public static final String MODULE_NAME = "artemis_module_imported";
     public static final String CLASSIFICATION_NAME = "MLS_France";
+
+    public static final String APPLI_NAME = "artemis_application_instance";
+    public static final String MODULE_INSTANCE_NAME = "artemis_module_instance";
 }

@@ -5,6 +5,8 @@ import lombok.Setter;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.List;
+
 @Getter
 @Setter
 
@@ -17,5 +19,13 @@ public class Attributes {
 
    String version;
 
-   String startTime = null;
+   String startTime;
+
+   Entity instanceOf;
+
+   Entity memberOf;
+
+   List<Entity> inputs;
+
+   List<Entity> outputs;
 }
