@@ -58,7 +58,7 @@ public class Mongodb extends DataStore {
 
              CollectionAttributes collattribs = new CollectionAttributes();
              collattribs.setName(collection);
-             collattribs.setQualifiedName(collection + "." + databasename + "@" + ipAddress);
+             collattribs.setQualifiedName(collection + "." + databasename + "." + ipAddress);
 
              Entity db = new Entity();
              db.setGuid(dbGuid);
@@ -74,7 +74,7 @@ public class Mongodb extends DataStore {
            db.setTypeName("mongo_db");
            DbAttributes dbattribs = new DbAttributes();
            dbattribs.setName(databasename);
-           dbattribs.setQualifiedName(databasename + "@" + ipAddress);
+           dbattribs.setQualifiedName(databasename + "." + ipAddress);
 
            Entity icluster = new Entity();
            icluster.setGuid(clusterGuid);

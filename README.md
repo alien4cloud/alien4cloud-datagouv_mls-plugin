@@ -9,3 +9,5 @@ In alien4cloud main configuration file, set:
 - datagouv_mls.topic : Kafka topic (module import)
 - datagouv_mls.moduleDeleteCredentials : credentials user:password (module deletion)
 - datagouv_mls.moduleDeleteUrl : REST URL (module deletion)
+- datagouv_mls.applicationDeployCredentials : credentials user:password (application deployment)
+- datagouv_mls.applicationDeployUrl : REST URL (application deployment)

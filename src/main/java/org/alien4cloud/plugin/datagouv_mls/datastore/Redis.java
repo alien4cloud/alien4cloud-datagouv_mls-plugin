@@ -50,7 +50,7 @@ public class Redis extends DataStore {
 
              KeyAttributes keyattribs = new KeyAttributes();
              keyattribs.setName(skey);
-             keyattribs.setQualifiedName(skey + "@" + ipAddress);
+             keyattribs.setQualifiedName(skey + "." + ipAddress);
 
              Entity cluster = new Entity();
              cluster.setGuid(clusterGuid);

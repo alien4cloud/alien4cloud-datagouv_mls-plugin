@@ -6,11 +6,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Getter
 @Setter
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Entity {
 
    String typeName;
@@ -20,5 +22,4 @@ public class Entity {
    Attributes attributes;
 
    List<Classification> classifications;
-
 }

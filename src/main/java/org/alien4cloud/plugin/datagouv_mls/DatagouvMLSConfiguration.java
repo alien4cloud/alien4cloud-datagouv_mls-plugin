@@ -15,9 +15,11 @@ import org.springframework.stereotype.Component;
 public class DatagouvMLSConfiguration {
 
     private String kafkaServers;
-
     private String topic;
 
     private String moduleDeleteCredentials;
     private String moduleDeleteUrl;
+
+    private String applicationDeployCredentials;
+    private String applicationDeployUrl;
 }

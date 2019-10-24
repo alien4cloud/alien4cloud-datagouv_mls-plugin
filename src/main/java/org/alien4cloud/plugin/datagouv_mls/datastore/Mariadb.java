@@ -45,7 +45,7 @@ public class Mariadb extends DataStore {
           String databasename = "";
           Capability endpoint = safe(service.getCapabilities()).get("mariadb_endpoint");
           if (endpoint != null) {
-             databasename = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("prefix"));
+             databasename = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("database"));
           }
 
           /* process tables */

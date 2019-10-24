@@ -6,7 +6,7 @@ import java.io.InputStreamReader;
 
 public class ProcessLauncher {
 
-    public static int launch(String[] cmd, StringBuffer disp) {
+    public static int launch(String[] cmd, StringBuffer output, StringBuffer error) {
 
         int exitCode = -1;
 
@@ -23,20 +23,20 @@ public class ProcessLauncher {
 
             String line;
             while ((line = reader.readLine()) != null) {
-                disp = disp.append(line).append("\n");
+                output = output.append(line).append("\n");
             }
 
             reader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
 
             while ((line = reader.readLine()) != null) {
-                disp = disp.append(line).append("\n");
+                error = error.append(line).append("\n");
             }
 
             exitCode = process.waitFor();
         } catch (IOException e) {
-            disp.append("EXCEPTION: " + e.getMessage());
+            error.append("EXCEPTION: " + e.getMessage());
         } catch (InterruptedException e) {
-            disp.append("EXCEPTION: " + e.getMessage());
+            error.append("EXCEPTION: " + e.getMessage());
         }
 
         return exitCode;

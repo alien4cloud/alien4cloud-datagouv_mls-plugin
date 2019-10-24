@@ -63,11 +63,12 @@ public class DatagouvMLSModuleDelete implements ApplicationListener<BeforeArchiv
                 commands[4] = configuration.getModuleDeleteCredentials();
                 commands[5] = configuration.getModuleDeleteUrl() + archiveName;
                 StringBuffer output = new StringBuffer();
+                StringBuffer error = new StringBuffer();
 
-                int ret = ProcessLauncher.launch(commands, output);
+                int ret = ProcessLauncher.launch(commands, output, error);
 
                 if (ret != 0) {
-                   log.error ("Error " + ret +"[" + output.toString() + "]");
+                   log.error ("Error " + ret +"[" + error.toString() + "]");
                 }
             }
          }

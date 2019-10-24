@@ -11,7 +11,9 @@ import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.RelationshipTemplate;
 import org.alien4cloud.tosca.model.templates.Topology;
 import org.alien4cloud.tosca.model.types.NodeType;
+import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConfiguration;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConstants;
+import org.alien4cloud.plugin.datagouv_mls.utils.ProcessLauncher;
 import org.alien4cloud.plugin.datagouv_mls.datastore.*;
 import org.alien4cloud.plugin.datagouv_mls.model.*;
 
@@ -21,6 +23,11 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import javax.annotation.Resource;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -33,6 +40,9 @@ import java.util.stream.Stream;
 @Slf4j
 @Component("datagouv_mls-modifier")
 public class DatagouvMLSModifier extends TopologyModifierSupport {
+
+    @Resource
+    private DatagouvMLSConfiguration configuration;
 
     private int guid = -1;
 
@@ -182,9 +192,42 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        }
 
        try {
-          log.info ("TOPO=" + (new ObjectMapper()).writeValueAsString(topology));
+          //log.info ("TOPO=" + (new ObjectMapper()).writeValueAsString(topology));
           String json = (new ObjectMapper()).writeValueAsString(fullAppli);
           log.info ("JSON=" + json);
+
+          Path path = Files.createTempFile("dgv", ".json");
+          Files.write(path, "Temporary content...".getBytes(StandardCharsets.UTF_8));
+          path.toFile().deleteOnExit();
+
+          String[] commands = new String[7];
+          commands[0] = "curl";
+          commands[1] = "-X";
+          commands[2] = "POST";
+          commands[3] = "-u";
+          commands[4] = configuration.getApplicationDeployCredentials();
+          commands[5] = "-d@" + path.toFile().getAbsolutePath();
+          commands[6] = configuration.getApplicationDeployUrl();
+          StringBuffer output = new StringBuffer();
+          StringBuffer error = new StringBuffer();
+
+          int ret = ProcessLauncher.launch(commands, output, error);
+
+          if (ret != 0) {
+             log.error ("Error " + ret +"[" + error.toString() + "]");
+          } else {
+             log.info("response:" + output.toString());
+
+             Application retAppli = (new ObjectMapper()).readValue(output.toString(), Application.class);
+
+             for (Entity retEntity : retAppli.getEntities()) {
+                if (retEntity.getTypeName().equals(DatagouvMLSConstants.MODULE_INSTANCE_NAME)) {
+                   log.info ("Module " + retEntity.getAttributes().getName() + " = " + retEntity.getAttributes().getTokenid() + "::" + retEntity.getAttributes().getPwdid());
+                }
+             }
+          }
+
+
        } catch (Exception e) {
           log.error ("Got exception:" + e.getMessage());
        }
