@@ -4,6 +4,7 @@ import static alien4cloud.utils.AlienUtils.safe;
 import alien4cloud.utils.PropertyUtil;
 import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ListPropertyValue;
+import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
 import org.alien4cloud.tosca.model.templates.Capability;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.ServiceNodeTemplate;
@@ -74,4 +75,13 @@ public class Redis extends DataStore {
 
        return entities;
     }
+
+    public void setCredentials (NodeTemplate service, String user, String password) {
+        Capability endpoint = safe(service.getCapabilities()).get("redis_endpoint");
+        if (endpoint != null) {
+           endpoint.getProperties().put("user", new ScalarPropertyValue(user));
+           endpoint.getProperties().put("password", new ScalarPropertyValue(password));
+        }
+    }
+
 }

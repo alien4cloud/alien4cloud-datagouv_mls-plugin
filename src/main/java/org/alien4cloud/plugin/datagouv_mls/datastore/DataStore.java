@@ -23,4 +23,6 @@ public abstract class DataStore {
           return 1;
        }
     }
+
+    public abstract void setCredentials (NodeTemplate service, String user, String password);
 }

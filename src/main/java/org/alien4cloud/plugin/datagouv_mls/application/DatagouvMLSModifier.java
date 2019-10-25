@@ -102,6 +102,10 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
        entities.add(appli);
 
+       /* maps to store links between modules and services nodes, and services and datastores objects */
+       Map<String, List<NodeTemplate>> nodesToServices = new HashMap<String, List<NodeTemplate>>();
+       Map<String, DataStore> servicesToDs = new HashMap<String, DataStore>();
+
        /* process nodes */
        Map<String, NodeTemplate> nodeTemplates = topology.getNodeTemplates();
        for (String nodeName : nodeTemplates.keySet()) {
@@ -109,7 +113,10 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
           if ( safe(nodeTemplates.get(nodeName).getProperties()).get("container") != null) {
              NodeType nodeType = ToscaContext.get(NodeType.class, nodeTemplates.get(nodeName).getType());
              String version = nodeType.getArchiveVersion();
-             log.info ("Processing node " + nodeName + " - " + nodeTemplates.get(nodeName).getType() + " :" + version);
+             log.info ("Processing node " + nodeName);
+
+             List<NodeTemplate> serviceNodes = new ArrayList<NodeTemplate>();
+             nodesToServices.put (nodeName, serviceNodes);
 
              String moduleGuid = getGuid();
 
@@ -141,9 +148,11 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
                     /* get datastore service node */
                     NodeTemplate serviceNode = nodeTemplates.get(relationships.get(nrel).getTarget());
+                    serviceNodes.add(serviceNode);
 
                     try {
                        DataStore ds = (DataStore)dataStoreTypes.get(relationships.get(nrel).getRequirementType()).newInstance();
+                       servicesToDs.put (serviceNode.getName(), ds);
                        String typeName = ds.getTypeName();
                        /* get number of first level elements for datastore in order to generate inputs & outputs */
                        int nb = ds.getNbSets(relationships.get(nrel).getProperties());
@@ -192,13 +201,11 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        }
 
        try {
-          //log.info ("TOPO=" + (new ObjectMapper()).writeValueAsString(topology));
           String json = (new ObjectMapper()).writeValueAsString(fullAppli);
-          log.info ("JSON=" + json);
+          log.debug("JSON=" + json);
 
           Path path = Files.createTempFile("dgv", ".json");
-          Files.write(path, "Temporary content...".getBytes(StandardCharsets.UTF_8));
-          path.toFile().deleteOnExit();
+          Files.write(path, json.getBytes(StandardCharsets.UTF_8));
 
           String[] commands = new String[7];
           commands[0] = "curl";
@@ -212,22 +219,24 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
           StringBuffer error = new StringBuffer();
 
           int ret = ProcessLauncher.launch(commands, output, error);
-
+          Files.delete (path);
           if (ret != 0) {
              log.error ("Error " + ret +"[" + error.toString() + "]");
           } else {
-             log.info("response:" + output.toString());
-
+             log.debug("RESPONSE=" + output.toString());
              Application retAppli = (new ObjectMapper()).readValue(output.toString(), Application.class);
 
              for (Entity retEntity : retAppli.getEntities()) {
                 if (retEntity.getTypeName().equals(DatagouvMLSConstants.MODULE_INSTANCE_NAME)) {
-                   log.info ("Module " + retEntity.getAttributes().getName() + " = " + retEntity.getAttributes().getTokenid() + "::" + retEntity.getAttributes().getPwdid());
+                   List<NodeTemplate> serviceNodes = nodesToServices.get(retEntity.getAttributes().getName());
+                   if (serviceNodes == null) {
+                      log.warn("Can not find services for " + retEntity.getAttributes().getName());
+                   } else for (NodeTemplate service : serviceNodes) {
+                      servicesToDs.get(service.getName()).setCredentials(service, retEntity.getAttributes().getTokenid(), retEntity.getAttributes().getPwdid());
+                   }
                 }
              }
           }
-
-
        } catch (Exception e) {
           log.error ("Got exception:" + e.getMessage());
        }
