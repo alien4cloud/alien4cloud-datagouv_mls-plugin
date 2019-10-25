@@ -25,6 +25,7 @@ public class DatagouvMLSConstants {
         { "artemis.redis.pub.capabilities.Redis", Redis.class }, 
         { "artemis.mongodb.pub.capabilities.MongoDb", Mongodb.class }, 
         { "artemis.mariadb.pub.capabilities.Mariadb", Mariadb.class }, 
+        { "artemis.postgresql.pub.capabilities.PostgreSQLEndpoint", Postgresql.class },
     }).collect(Collectors.toMap(data -> (String) data[0], data -> (Class) data[1]));
 
 
