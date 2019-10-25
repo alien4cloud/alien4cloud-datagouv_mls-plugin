@@ -14,7 +14,7 @@ import org.alien4cloud.tosca.model.types.NodeType;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConfiguration;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConstants;
 import org.alien4cloud.plugin.datagouv_mls.utils.ProcessLauncher;
-import org.alien4cloud.plugin.datagouv_mls.datastore.*;
+import org.alien4cloud.plugin.datagouv_mls.datastore.DataStore;
 import org.alien4cloud.plugin.datagouv_mls.model.*;
 
 import org.springframework.stereotype.Component;
@@ -34,8 +34,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 @Component("datagouv_mls-modifier")
@@ -51,12 +49,6 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        guid--;
        return ret;
     }
-
-    private static Map<String, Class> dataStoreTypes = Stream.of(new Object[][] { 
-        { "artemis.redis.pub.capabilities.Redis", Redis.class }, 
-        { "artemis.mongodb.pub.capabilities.MongoDb", Mongodb.class }, 
-        { "artemis.mariadb.pub.capabilities.Mariadb", Mariadb.class }, 
-    }).collect(Collectors.toMap(data -> (String) data[0], data -> (Class) data[1]));
 
     @Override
     @ToscaContextual
@@ -142,7 +134,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
              List<Entity> outputs = new ArrayList<Entity>();
              for (String nrel : safe(relationships).keySet()) {
                  /* datastores relations are in dataStoreTypes map */
-                 if (dataStoreTypes.keySet().contains(relationships.get(nrel).getRequirementType())) {
+                 if (DatagouvMLSConstants.dataStoreTypes.keySet().contains(relationships.get(nrel).getRequirementType())) {
 
                     log.info ("Processing relation " + relationships.get(nrel).getRequirementType() + " with target " + relationships.get(nrel).getTarget());
 
@@ -151,7 +143,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                     serviceNodes.add(serviceNode);
 
                     try {
-                       DataStore ds = (DataStore)dataStoreTypes.get(relationships.get(nrel).getRequirementType()).newInstance();
+                       DataStore ds = (DataStore)DatagouvMLSConstants.dataStoreTypes.get(relationships.get(nrel).getRequirementType()).newInstance();
                        servicesToDs.put (serviceNode.getName(), ds);
                        String typeName = ds.getTypeName();
                        /* get number of first level elements for datastore in order to generate inputs & outputs */

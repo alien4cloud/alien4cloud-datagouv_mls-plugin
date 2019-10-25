@@ -1,5 +1,11 @@
 package org.alien4cloud.plugin.datagouv_mls;
 
+import org.alien4cloud.plugin.datagouv_mls.datastore.*;
+
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 public class DatagouvMLSConstants {
 
     // meta properties values
@@ -13,4 +19,13 @@ public class DatagouvMLSConstants {
 
     public static final String APPLI_NAME = "artemis_application_instance";
     public static final String MODULE_INSTANCE_NAME = "artemis_module_instance";
+
+    // known datastores
+    public static Map<String, Class> dataStoreTypes = Stream.of(new Object[][] { 
+        { "artemis.redis.pub.capabilities.Redis", Redis.class }, 
+        { "artemis.mongodb.pub.capabilities.MongoDb", Mongodb.class }, 
+        { "artemis.mariadb.pub.capabilities.Mariadb", Mariadb.class }, 
+    }).collect(Collectors.toMap(data -> (String) data[0], data -> (Class) data[1]));
+
+
 }
