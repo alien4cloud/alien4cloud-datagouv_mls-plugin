@@ -1,4 +1,4 @@
-package org.alien4cloud.plugin.datagouv_mls.model.mariadb;
+package org.alien4cloud.plugin.datagouv_mls.model.cassandra;
 
 import org.alien4cloud.plugin.datagouv_mls.model.Attributes;
 import org.alien4cloud.plugin.datagouv_mls.model.Entity;
@@ -12,6 +12,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @Setter
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class InstAttributes extends Attributes {
-   String rdbms_type;
+public class KeyspaceAttributes extends Attributes {
+   Entity cluster;
 }

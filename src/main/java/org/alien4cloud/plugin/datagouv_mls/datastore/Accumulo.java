@@ -10,7 +10,7 @@ import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.ServiceNodeTemplate;
 import org.alien4cloud.plugin.datagouv_mls.model.Attributes;
 import org.alien4cloud.plugin.datagouv_mls.model.Entity;
-import org.alien4cloud.plugin.datagouv_mls.model.mongodb.*;
+import org.alien4cloud.plugin.datagouv_mls.model.accumulo.*;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,10 +19,10 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class Mongodb extends DataStore {
+public class Accumulo extends DataStore {
 
    public String getTypeName() {
-      return "mongo_collection";
+      return "accumulo_table";
    }
 
     public Map<String,Entity> getEntities (Map<String, AbstractPropertyValue> properties, NodeTemplate service, int startGuid, int curGuid) {
@@ -33,69 +33,71 @@ public class Mongodb extends DataStore {
           List<Object> vals = ((ListPropertyValue)datasets).getValue();
 
           /* set guids */
-          String dbGuid = String.valueOf(curGuid);
+          String nsGuid = String.valueOf(curGuid);
           String clusterGuid = String.valueOf(curGuid-1);
 
           /* get ip address from service attribute */
           String ipAddress = "localhost";
           if (service instanceof ServiceNodeTemplate) {
              ServiceNodeTemplate serviceNodeTemplate = (ServiceNodeTemplate)service;
-             ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.mongodb_endpoint.ip_address");
+             ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.accumulo_endpoint.ip_address");
           }
 
-          /* get databasename from  capability property of service */
-          String databasename = "";
-          Capability endpoint = safe(service.getCapabilities()).get("mongodb_endpoint");
+          /* get some capability properties of service */
+          String ns = "";
+          String db = "";
+          Capability endpoint = safe(service.getCapabilities()).get("accumulo_endpoint");
           if (endpoint != null) {
-             databasename = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("databasename"));
+             ns = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("namespace"));
+             db = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("database"));
           }
 
           if (vals.size() == 0) {
              log.warn ("No datasets found for " + service.getName());
           }
 
-          /* process collections */
+          /* process tables */
           for (Object val : vals) {
-             String collection = (String)val;
+             String ntable = (String)val;
 
-             Entity coll = new Entity();
-             entities.put (String.valueOf(startGuid), coll);
-             coll.setTypeName(getTypeName());
-             coll.setGuid(String.valueOf(startGuid));
+             Entity table = new Entity();
+             entities.put (String.valueOf(startGuid), table);
+             table.setTypeName(getTypeName());
+             table.setGuid(String.valueOf(startGuid));
              startGuid--;
 
-             CollectionAttributes collattribs = new CollectionAttributes();
-             collattribs.setName(collection);
-             collattribs.setQualifiedName(collection + "." + databasename + "." + ipAddress);
+             TableAttributes tattribs = new TableAttributes();
+             tattribs.setName(ntable);
+             tattribs.setQualifiedName(ntable + "." + db + "." + ipAddress);
 
-             Entity db = new Entity();
-             db.setGuid(dbGuid);
-             db.setTypeName("mongo_db");
+             Entity namespace = new Entity();
+             namespace.setGuid(nsGuid);
+             namespace.setTypeName("accumulo_namespace");
 
-             collattribs.setDb(db);
-             coll.setAttributes(collattribs);
+             tattribs.setNamespace(namespace);
+             table.setAttributes(tattribs);
           }
 
-           /* process db */
-           Entity db = new Entity();
-           db.setGuid(dbGuid);
-           db.setTypeName("mongo_db");
-           DbAttributes dbattribs = new DbAttributes();
-           dbattribs.setName(databasename);
-           dbattribs.setQualifiedName(databasename + "." + ipAddress);
+           /* process namespace */
+           Entity namespace = new Entity();
+           namespace.setGuid(nsGuid);
+           namespace.setTypeName("accumulo_namespace");
+           NamespaceAttributes nsattribs = new NamespaceAttributes();
+           nsattribs.setName(ns);
+           nsattribs.setQualifiedName(ns + "." + ipAddress);
 
            Entity icluster = new Entity();
            icluster.setGuid(clusterGuid);
-           icluster.setTypeName("mongo_cluster");
+           icluster.setTypeName("accumulo_cluster");
 
-           dbattribs.setCluster(icluster);
-           db.setAttributes(dbattribs);
-           entities.put (dbGuid, db);
+           nsattribs.setCluster(icluster);
+           namespace.setAttributes(nsattribs);
+           entities.put (nsGuid, namespace);
 
            /* process cluster */
            Entity cluster = new Entity();
            cluster.setGuid(clusterGuid);
-           cluster.setTypeName("mongo_cluster");
+           cluster.setTypeName("accumulo_cluster");
            Attributes cattribs = new Attributes();
            cattribs.setName(ipAddress);
            cattribs.setQualifiedName(ipAddress);
@@ -110,11 +112,7 @@ public class Mongodb extends DataStore {
     }
 
     public void setCredentials (NodeTemplate service, String user, String password) {
-        Capability endpoint = safe(service.getCapabilities()).get("mongodb_endpoint");
-        if (endpoint != null) {
-           endpoint.getProperties().put("username", new ScalarPropertyValue(user));
-           endpoint.getProperties().put("password", new ScalarPropertyValue(password));
-        }
+       /* ??? */
     }
 
 }

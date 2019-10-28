@@ -9,7 +9,7 @@ import org.alien4cloud.tosca.model.templates.Capability;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.ServiceNodeTemplate;
 import org.alien4cloud.plugin.datagouv_mls.model.Entity;
-import org.alien4cloud.plugin.datagouv_mls.model.mariadb.*;
+import org.alien4cloud.plugin.datagouv_mls.model.rdbms.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +47,10 @@ public class Mariadb extends DataStore {
           Capability endpoint = safe(service.getCapabilities()).get("mariadb_endpoint");
           if (endpoint != null) {
              databasename = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("database"));
+          }
+
+          if (vals.size() == 0) {
+             log.warn ("No datasets found for " + service.getName());
           }
 
           /* process tables */
@@ -98,6 +102,8 @@ public class Mariadb extends DataStore {
            instance.setAttributes(iattribs);
            entities.put (instanceGuid, instance);
 
+       } else {
+          log.warn ("No datasets found for " + service.getName());
        }
 
        return entities;

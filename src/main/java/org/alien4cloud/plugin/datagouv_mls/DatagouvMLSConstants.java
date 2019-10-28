@@ -26,6 +26,11 @@ public class DatagouvMLSConstants {
         { "artemis.mongodb.pub.capabilities.MongoDb", Mongodb.class }, 
         { "artemis.mariadb.pub.capabilities.Mariadb", Mariadb.class }, 
         { "artemis.postgresql.pub.capabilities.PostgreSQLEndpoint", Postgresql.class },
+        { "artemis.accumulo.pub.capabilities.Accumulo", Accumulo.class },
+        { "artemis.cassandra.pub.capabilities.CassandraDb", Cassandra.class },
+        { "artemis.elasticsearch.pub.capabilities.ElasticSearchRestAPI", Elasticsearch.class },
+        { "artemis.kafka.pub.capabilities.KafkaTopic", Kafka.class },
+        { "artemis.hadoop.pub.capabilities.HdfsRepository", Hadoop.class }
     }).collect(Collectors.toMap(data -> (String) data[0], data -> (Class) data[1]));
 
 

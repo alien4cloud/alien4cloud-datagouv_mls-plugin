@@ -12,10 +12,13 @@ import org.alien4cloud.plugin.datagouv_mls.model.Attributes;
 import org.alien4cloud.plugin.datagouv_mls.model.Entity;
 import org.alien4cloud.plugin.datagouv_mls.model.redis.*;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class Redis extends DataStore {
 
    public String getTypeName() {
@@ -37,6 +40,10 @@ public class Redis extends DataStore {
           if (service instanceof ServiceNodeTemplate) {
              ServiceNodeTemplate serviceNodeTemplate = (ServiceNodeTemplate)service;
              ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.redis_endpoint.ip_address");
+          }
+
+          if (vals.size() == 0) {
+             log.warn ("No datasets found for " + service.getName());
           }
 
           /* process keys */
@@ -71,6 +78,8 @@ public class Redis extends DataStore {
            cluster.setAttributes(cattribs);
            entities.put (clusterGuid, cluster);
 
+       } else {
+          log.warn ("No datasets found for " + service.getName());
        }
 
        return entities;
