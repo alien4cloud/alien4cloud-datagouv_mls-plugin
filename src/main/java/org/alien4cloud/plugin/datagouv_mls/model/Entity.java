@@ -19,6 +19,8 @@ public class Entity {
 
    String guid;
 
+   String qualifiedName;
+
    Attributes attributes;
 
    List<Classification> classifications;

@@ -71,6 +71,7 @@ public class Cassandra extends DataStore {
              Entity keyspace = new Entity();
              keyspace.setGuid(ksGuid);
              keyspace.setTypeName("cassandra_keyspace");
+             keyspace.setQualifiedName(ks + "." + ipAddress);
 
              tattribs.setKeyspace(keyspace);
              table.setAttributes(tattribs);
@@ -87,6 +88,7 @@ public class Cassandra extends DataStore {
            Entity icluster = new Entity();
            icluster.setGuid(clusterGuid);
            icluster.setTypeName("cassandra_cluster");
+           icluster.setQualifiedName(ipAddress);
 
            kattribs.setCluster(icluster);
            keyspace.setAttributes(kattribs);

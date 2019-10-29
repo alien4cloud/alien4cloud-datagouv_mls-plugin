@@ -45,11 +45,9 @@ public class Accumulo extends DataStore {
 
           /* get some capability properties of service */
           String ns = "";
-          String db = "";
           Capability endpoint = safe(service.getCapabilities()).get("accumulo_endpoint");
           if (endpoint != null) {
              ns = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("namespace"));
-             db = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("database"));
           }
 
           if (vals.size() == 0) {
@@ -68,11 +66,12 @@ public class Accumulo extends DataStore {
 
              TableAttributes tattribs = new TableAttributes();
              tattribs.setName(ntable);
-             tattribs.setQualifiedName(ntable + "." + db + "." + ipAddress);
+             tattribs.setQualifiedName(ntable + "." + ns + "." + ipAddress);
 
              Entity namespace = new Entity();
              namespace.setGuid(nsGuid);
              namespace.setTypeName("accumulo_namespace");
+             namespace.setQualifiedName(ns + "." + ipAddress);
 
              tattribs.setNamespace(namespace);
              table.setAttributes(tattribs);
@@ -89,6 +88,7 @@ public class Accumulo extends DataStore {
            Entity icluster = new Entity();
            icluster.setGuid(clusterGuid);
            icluster.setTypeName("accumulo_cluster");
+           icluster.setQualifiedName(ipAddress);
 
            nsattribs.setCluster(icluster);
            namespace.setAttributes(nsattribs);
@@ -112,7 +112,11 @@ public class Accumulo extends DataStore {
     }
 
     public void setCredentials (NodeTemplate service, String user, String password) {
-       /* ??? */
+        Capability endpoint = safe(service.getCapabilities()).get("accumulo_endpoint");
+        if (endpoint != null) {
+           endpoint.getProperties().put("username", new ScalarPropertyValue(user));
+           endpoint.getProperties().put("password", new ScalarPropertyValue(password));
+        }
     }
 
 }

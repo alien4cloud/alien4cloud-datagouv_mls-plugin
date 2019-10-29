@@ -51,6 +51,7 @@ public class Elasticsearch extends DataStore {
        Entity icluster = new Entity();
        icluster.setGuid(clusterGuid);
        icluster.setTypeName("elasticsearch_cluster");
+       icluster.setQualifiedName(ipAddress);
 
        idxattribs.setCluster(icluster);
        index.setAttributes(idxattribs);

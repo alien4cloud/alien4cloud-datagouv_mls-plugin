@@ -63,6 +63,7 @@ public class Redis extends DataStore {
              Entity cluster = new Entity();
              cluster.setGuid(clusterGuid);
              cluster.setTypeName("redis_cluster");
+             cluster.setQualifiedName(ipAddress);
 
              keyattribs.setCluster(cluster);
              key.setAttributes(keyattribs);
