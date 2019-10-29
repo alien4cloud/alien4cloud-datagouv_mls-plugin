@@ -53,7 +53,11 @@ public class Kafka extends DataStore {
     }
 
     public void setCredentials (NodeTemplate service, String user, String password) {
-       /* ??? */
+        Capability endpoint = safe(service.getCapabilities()).get("kafka_topic");
+        if (endpoint != null) {
+           endpoint.getProperties().put("username", new ScalarPropertyValue(user));
+           endpoint.getProperties().put("password", new ScalarPropertyValue(password));
+        }
     }
 
 }
