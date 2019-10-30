@@ -30,7 +30,9 @@ public class DatagouvMLSConstants {
         { "artemis.cassandra.pub.capabilities.CassandraDb", Cassandra.class },
         { "artemis.elasticsearch.pub.capabilities.ElasticSearchRestAPI", Elasticsearch.class },
         { "artemis.kafka.pub.capabilities.KafkaTopic", Kafka.class },
-        { "artemis.hadoop.pub.capabilities.HdfsRepository", Hadoop.class }
+        { "artemis.hadoop.pub.capabilities.HdfsRepository", Hadoop.class },
+        { "artemis.ceph.pub.capabilities.CephBucketEndpoint", Ceph.class }
+
     }).collect(Collectors.toMap(data -> (String) data[0], data -> (Class) data[1]));
 
 
