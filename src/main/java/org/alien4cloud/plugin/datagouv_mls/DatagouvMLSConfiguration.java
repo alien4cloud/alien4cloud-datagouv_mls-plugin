@@ -20,6 +20,10 @@ public class DatagouvMLSConfiguration {
     private String moduleDeleteCredentials;
     private String moduleDeleteUrl;
 
-    private String applicationDeployCredentials;
-    private String applicationDeployUrl;
+    private String applicationPostCredentials;
+    private String applicationPostUrl;
+
+    private String applicationDeleteCredentials;
+    private String applicationDeleteAppliUrl;
+    private String applicationDeleteModuleUrl;
 }

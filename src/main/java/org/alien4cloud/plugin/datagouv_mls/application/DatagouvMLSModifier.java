@@ -204,9 +204,9 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
           commands[1] = "-X";
           commands[2] = "POST";
           commands[3] = "-u";
-          commands[4] = configuration.getApplicationDeployCredentials();
+          commands[4] = configuration.getApplicationPostCredentials();
           commands[5] = "-d@" + path.toFile().getAbsolutePath();
-          commands[6] = configuration.getApplicationDeployUrl();
+          commands[6] = configuration.getApplicationPostUrl();
           StringBuffer output = new StringBuffer();
           StringBuffer error = new StringBuffer();
 

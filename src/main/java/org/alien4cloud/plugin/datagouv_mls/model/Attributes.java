@@ -23,6 +23,10 @@ public class Attributes {
 
    String startTime;
 
+   String endTime;
+
+   String status;
+
    Entity instanceOf;
 
    Entity memberOf;
