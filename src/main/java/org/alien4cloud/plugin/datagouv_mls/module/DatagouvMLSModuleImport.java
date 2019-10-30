@@ -54,7 +54,7 @@ public class DatagouvMLSModuleImport implements ApplicationListener<AfterArchive
                    NodeType node = nodeTypes.get(nodename);
 
                    boolean keepIt = false;
-                   String level = null, levelw = null;
+                   String level = "NU", levelw = null;
 
                    if (node.getTags() != null) {
                       for (Tag tag : node.getTags()) {
