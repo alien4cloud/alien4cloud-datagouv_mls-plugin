@@ -13,12 +13,8 @@ component_descriptors:
     name: Datagouv-MLS / modules delete
     description: >
       Plugin that publishes info about deleted modules
-  - bean_name: datagouv_mls-pre_match-modifier
-    name: Datagouv-MLS / applications deployment (pre-match)
-    description: >
-      Plugin that prepares data for datagouv_mls-modifier
   - bean_name: datagouv_mls-modifier
-    name: Datagouv-MLS / applications deployment (post-match)
+    name: Datagouv-MLS / applications deployment
     description: >
       Plugin that publishes info about applications to be deployed
   - bean_name: datagouv_mls-listener

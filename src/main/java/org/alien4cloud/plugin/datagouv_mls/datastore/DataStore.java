@@ -24,5 +24,7 @@ public abstract class DataStore {
        }
     }
 
-    public abstract void setCredentials (NodeTemplate service, String user, String password);
+    public String updateInput (String function, List<String> params, String user, String password) {
+       return null;
+    }
 }

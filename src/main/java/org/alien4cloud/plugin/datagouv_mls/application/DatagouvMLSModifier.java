@@ -7,6 +7,9 @@ import static alien4cloud.utils.AlienUtils.safe;
 
 import org.alien4cloud.alm.deployment.configuration.flow.FlowExecutionContext;
 import org.alien4cloud.alm.deployment.configuration.flow.TopologyModifierSupport;
+import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
+import org.alien4cloud.tosca.model.definitions.Operation;
+import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.RelationshipTemplate;
 import org.alien4cloud.tosca.model.templates.Topology;
@@ -14,6 +17,7 @@ import org.alien4cloud.tosca.model.types.NodeType;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConfiguration;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConstants;
 import org.alien4cloud.plugin.datagouv_mls.utils.ProcessLauncher;
+import org.alien4cloud.plugin.datagouv_mls.utils.TopologyUtils;
 import org.alien4cloud.plugin.datagouv_mls.datastore.DataStore;
 import org.alien4cloud.plugin.datagouv_mls.model.*;
 
@@ -59,7 +63,6 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
             WorkflowValidator.disableValidationThreadLocal.set(true);
             doProcess(topology, context);
         } catch (Exception e) {
-            context.getLog().error("Couldn't process Datagouv-MLS modifier");
             log.warn ("Couldn't process Datagouv-MLS modifier, got " + e.getMessage());
         } finally {
             WorkflowValidator.disableValidationThreadLocal.remove();
@@ -213,18 +216,40 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
           int ret = ProcessLauncher.launch(commands, output, error);
           Files.delete (path);
           if (ret != 0) {
-             log.error ("Error " + ret +"[" + error.toString() + "]");
+             log.error ("Error " + ret +" [" + error.toString() + "]");
           } else {
              log.debug("RESPONSE=" + output.toString());
              Application retAppli = (new ObjectMapper()).readValue(output.toString(), Application.class);
 
              for (Entity retEntity : retAppli.getEntities()) {
                 if (retEntity.getTypeName().equals(DatagouvMLSConstants.MODULE_INSTANCE_NAME)) {
+
                    List<NodeTemplate> serviceNodes = nodesToServices.get(retEntity.getAttributes().getName());
                    if (serviceNodes == null) {
                       log.warn("Can not find services for " + retEntity.getAttributes().getName());
-                   } else for (NodeTemplate service : serviceNodes) {
-                      servicesToDs.get(service.getName()).setCredentials(service, retEntity.getAttributes().getTokenid(), retEntity.getAttributes().getPwdid());
+                   } else {
+                      /* update inputs for create operation */
+                      Operation createOp = TopologyUtils.getCreateOperation(nodeTemplates.get(retEntity.getAttributes().getName()));
+
+                      if (createOp != null) {
+                         for (NodeTemplate service : serviceNodes) {
+                            Map<String, String> newvals = new HashMap<String,String>();
+                            safe(createOp.getInputParameters()).forEach((inputName, iValue) -> {
+                               /* update inputs for each service: concats are directly updated, get_property's return new value */
+                               String val = TopologyUtils.updateInput (nodeTemplates.get(retEntity.getAttributes().getName()), 
+                                                                       servicesToDs.get(service.getName()), inputName, 
+                                                                       (AbstractPropertyValue)iValue,
+                                                                       retEntity.getAttributes().getTokenid(), retEntity.getAttributes().getPwdid());
+                               if (val != null) {
+                                  newvals.put (inputName, val);
+                               }
+                            });
+
+                            newvals.forEach((inputName, value) -> {
+                               createOp.getInputParameters().put (inputName, new ScalarPropertyValue(value));
+                            });
+                         }
+                      }
                    }
                 }
              }

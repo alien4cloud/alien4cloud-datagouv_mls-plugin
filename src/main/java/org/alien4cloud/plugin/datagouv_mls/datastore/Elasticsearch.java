@@ -69,8 +69,4 @@ public class Elasticsearch extends DataStore {
        return entities;
     }
 
-    public void setCredentials (NodeTemplate service, String user, String password) {
-       /* ??? */
-    }
-
 }

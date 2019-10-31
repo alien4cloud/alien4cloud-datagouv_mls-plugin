@@ -8,6 +8,7 @@ import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
 import org.alien4cloud.tosca.model.templates.Capability;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.ServiceNodeTemplate;
+import org.alien4cloud.tosca.normative.constants.ToscaFunctionConstants;
 import org.alien4cloud.plugin.datagouv_mls.model.Attributes;
 import org.alien4cloud.plugin.datagouv_mls.model.Entity;
 import org.alien4cloud.plugin.datagouv_mls.model.kafka.*;
@@ -52,12 +53,14 @@ public class Kafka extends DataStore {
        return entities;
     }
 
-    public void setCredentials (NodeTemplate service, String user, String password) {
-        Capability endpoint = safe(service.getCapabilities()).get("kafka_topic");
-        if (endpoint != null) {
-           endpoint.getProperties().put("username", new ScalarPropertyValue(user));
-           endpoint.getProperties().put("password", new ScalarPropertyValue(password));
-        }
+    public String updateInput (String function, List<String> params, String user, String password) {
+       if (function.equals(ToscaFunctionConstants.GET_PROPERTY) && params.get(2).equals("kafka_topic") && params.get(3).equals("username")) {
+          return user;
+       } else if (function.equals(ToscaFunctionConstants.GET_PROPERTY) && params.get(2).equals("kafka_topic") && params.get(3).equals("password")) {
+          return password;
+       } else {
+          return null;
+       }
     }
 
 }
