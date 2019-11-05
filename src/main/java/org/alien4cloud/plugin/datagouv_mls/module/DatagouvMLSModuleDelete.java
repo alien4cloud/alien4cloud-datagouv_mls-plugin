@@ -1,12 +1,15 @@
 package org.alien4cloud.plugin.datagouv_mls.module;
 
-import alien4cloud.model.common.Tag;
+import alien4cloud.common.MetaPropertiesService;
+import alien4cloud.model.common.MetaPropertyTarget;
+import static alien4cloud.utils.AlienUtils.safe;
 import org.alien4cloud.tosca.catalog.events.BeforeArchiveDeleted;
 import org.alien4cloud.tosca.catalog.index.IToscaTypeIndexerService;
 import org.alien4cloud.tosca.model.types.NodeType;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConfiguration;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConstants;
 import org.alien4cloud.plugin.datagouv_mls.utils.ProcessLauncher;
+import org.alien4cloud.plugin.datagouv_mls.utils.TopologyUtils;
 
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
@@ -23,6 +26,9 @@ public class DatagouvMLSModuleDelete implements ApplicationListener<BeforeArchiv
 
     @Resource
     private DatagouvMLSConfiguration configuration;
+
+    @Resource
+    private MetaPropertiesService metaPropertiesService;
 
     @Inject
     private IToscaTypeIndexerService indexerService;
@@ -44,12 +50,9 @@ public class DatagouvMLSModuleDelete implements ApplicationListener<BeforeArchiv
             boolean keepIt = false;
             for (String nodename : nodeTypes.keySet()) {
                NodeType node = nodeTypes.get(nodename);
-               if (node.getTags() != null) {
-                  for (Tag tag : node.getTags()) {
-                     if (tag.getName().equals(DatagouvMLSConstants.COMPONENT_TYPE) && tag.getValue().equalsIgnoreCase("Module")) {
-                       keepIt = true;
-                     }
-                  }
+               String typeCompo = getMetaprop(node, DatagouvMLSConstants.COMPONENT_TYPE);
+               if ((typeCompo != null) && typeCompo.equalsIgnoreCase("Module")) {
+                  keepIt = true;
                }
             }
 
@@ -77,4 +80,15 @@ public class DatagouvMLSModuleDelete implements ApplicationListener<BeforeArchiv
          log.error ("Got exception: " + e.getMessage());
        }
     }
+
+    private String getMetaprop (NodeType node, String prop) {
+       String propKey = metaPropertiesService.getMetapropertykeyByName(prop, MetaPropertyTarget.COMPONENT);
+
+       if (propKey != null) {
+          return safe(node.getMetaProperties()).get(propKey);
+       }
+
+       return null;
+    }
+
 }

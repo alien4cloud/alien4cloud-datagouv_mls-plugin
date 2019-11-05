@@ -1,11 +1,14 @@
 package org.alien4cloud.plugin.datagouv_mls.module;
 
-import alien4cloud.model.common.Tag;
+import alien4cloud.common.MetaPropertiesService;
+import alien4cloud.model.common.MetaPropertyTarget;
+import static alien4cloud.utils.AlienUtils.safe;
 import org.alien4cloud.tosca.catalog.events.AfterArchiveIndexed;
 import org.alien4cloud.tosca.model.types.NodeType;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConfiguration;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConstants;
 import org.alien4cloud.plugin.datagouv_mls.model.*;
+import org.alien4cloud.plugin.datagouv_mls.utils.TopologyUtils;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -34,6 +37,9 @@ public class DatagouvMLSModuleImport implements ApplicationListener<AfterArchive
     @Resource
     private DatagouvMLSConfiguration configuration;
 
+    @Resource
+    private MetaPropertiesService metaPropertiesService;
+
     // Kafka producer
     Producer<String,String> producer;
 
@@ -53,23 +59,13 @@ public class DatagouvMLSModuleImport implements ApplicationListener<AfterArchive
                 for (String nodename : nodeTypes.keySet()) {
                    NodeType node = nodeTypes.get(nodename);
 
-                   boolean keepIt = false;
-                   String level = "NU", levelw = null;
+                   String typeCompo = getMetaprop(node, DatagouvMLSConstants.COMPONENT_TYPE);
 
-                   if (node.getTags() != null) {
-                      for (Tag tag : node.getTags()) {
-                         if (tag.getName().equals(DatagouvMLSConstants.COMPONENT_TYPE) && tag.getValue().equalsIgnoreCase("Module")) {
-                           keepIt = true;
-                         } else if (tag.getName().equals(DatagouvMLSConstants.MLS_FR_LEVEL)) {
-                            level = tag.getValue();
-                         } else if (tag.getName().equals(DatagouvMLSConstants.MLS_FR_LEVELW)) {
-                            levelw = tag.getValue();
-                         }
-                      }
-                   }
-
-                   if (keepIt) {
+                   if ((typeCompo!=null) && typeCompo.equalsIgnoreCase("Module")) {
                      log.info ("Processing node " + nodename);
+
+                     String level = getMetaprop(node, DatagouvMLSConstants.MLS_FR_LEVEL);
+                     String levelw = getMetaprop(node, DatagouvMLSConstants.MLS_FR_LEVELW);
 
                      Entity entity = new Entity();
                      entity.setTypeName(DatagouvMLSConstants.MODULE_NAME);
@@ -100,7 +96,7 @@ public class DatagouvMLSModuleImport implements ApplicationListener<AfterArchive
              }
            }
        } catch (Exception e) {
-         log.error ("Got exception: " + e.getMessage());
+         log.error ("Got exception: " + e.getMessage(), e);
        }
     }
 
@@ -128,6 +124,16 @@ public class DatagouvMLSModuleImport implements ApplicationListener<AfterArchive
     private void doPublish(String json) {
         producer.send(new ProducerRecord<>(configuration.getTopic(),null,json));
         log.debug("=> KAFKA[{}] : {}",configuration.getTopic(),json);
+    }
+
+    private String getMetaprop (NodeType node, String prop) {
+       String propKey = metaPropertiesService.getMetapropertykeyByName(prop, MetaPropertyTarget.COMPONENT);
+
+       if (propKey != null) {
+          return safe(node.getMetaProperties()).get(propKey);
+       }
+
+       return null;
     }
 
 }
