@@ -108,6 +108,7 @@ public class DatagouvMLSModuleImport implements ApplicationListener<AfterArchive
         } else {
             Properties props = new Properties();
             props.put("bootstrap.servers", configuration.getKafkaServers());
+            props.put("client.id", "A4C-datagouvMLS-plugin");
 
             producer = new KafkaProducer<String, String>(props, new StringSerializer(), new StringSerializer());
         }
