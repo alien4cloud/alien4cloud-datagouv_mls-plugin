@@ -127,14 +127,16 @@ public class DatagouvMLSListener {
           Path path = Files.createTempFile("dgv", ".json");
           Files.write(path, json.getBytes(StandardCharsets.UTF_8));
 
-          String[] commands = new String[7];
+          String[] commands = new String[9];
           commands[0] = "curl";
           commands[1] = "-X";
           commands[2] = "POST";
           commands[3] = "-u";
           commands[4] = configuration.getApplicationPostCredentials();
           commands[5] = "-d@" + path.toFile().getAbsolutePath();
-          commands[6] = configuration.getApplicationPostUrl();
+          commands[6] = "-H";
+          commands[7] = "Content-type: application/json";
+          commands[8] = configuration.getApplicationPostUrl();
           StringBuffer output = new StringBuffer();
           StringBuffer error = new StringBuffer();
 
@@ -247,14 +249,16 @@ public class DatagouvMLSListener {
           Path path = Files.createTempFile("dgv", ".json");
           Files.write(path, json.getBytes(StandardCharsets.UTF_8));
 
-          String[] commands = new String[7];
+          String[] commands = new String[9];
           commands[0] = "curl";
           commands[1] = "-X";
           commands[2] = "POST";
           commands[3] = "-u";
           commands[4] = configuration.getApplicationPostCredentials();
           commands[5] = "-d@" + path.toFile().getAbsolutePath();
-          commands[6] = configuration.getApplicationPostUrl();
+          commands[6] = "-H";
+          commands[7] = "Content-type: application/json";
+          commands[8] = configuration.getApplicationPostUrl();
           StringBuffer output = new StringBuffer();
           StringBuffer error = new StringBuffer();
 

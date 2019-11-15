@@ -202,14 +202,16 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
           Path path = Files.createTempFile("dgv", ".json");
           Files.write(path, json.getBytes(StandardCharsets.UTF_8));
 
-          String[] commands = new String[7];
+          String[] commands = new String[9];
           commands[0] = "curl";
           commands[1] = "-X";
           commands[2] = "POST";
           commands[3] = "-u";
           commands[4] = configuration.getApplicationPostCredentials();
           commands[5] = "-d@" + path.toFile().getAbsolutePath();
-          commands[6] = configuration.getApplicationPostUrl();
+          commands[6] = "-H";
+          commands[7] = "Content-type: application/json";
+          commands[8] = configuration.getApplicationPostUrl();
           StringBuffer output = new StringBuffer();
           StringBuffer error = new StringBuffer();
 
@@ -221,7 +223,9 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
              log.debug("RESPONSE=" + output.toString());
              Application retAppli = (new ObjectMapper()).readValue(output.toString(), Application.class);
 
-             for (Entity retEntity : retAppli.getEntities()) {
+             if ((retAppli.getEntities() == null) || (retAppli.getEntities().size() == 0)) {
+                log.error ("DataGouv response contains no entity !");
+             } else for (Entity retEntity : retAppli.getEntities()) {
                 if (retEntity.getTypeName().equals(DatagouvMLSConstants.MODULE_INSTANCE_NAME)) {
 
                    List<NodeTemplate> serviceNodes = nodesToServices.get(retEntity.getAttributes().getName());
