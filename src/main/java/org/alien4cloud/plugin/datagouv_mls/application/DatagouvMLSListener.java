@@ -144,6 +144,8 @@ public class DatagouvMLSListener {
           Files.delete (path);
           if (ret != 0) {
              log.error ("Error " + ret +"[" + error.toString() + "]");
+          } else {
+             log.debug ("POST RESPONSE=" + output.toString());
           }
        } catch (Exception e) {
           log.error ("Got exception:" + e.getMessage());
@@ -266,6 +268,8 @@ public class DatagouvMLSListener {
           Files.delete (path);
           if (ret != 0) {
              log.error ("Error " + ret +"[" + error.toString() + "]");
+          } else {
+             log.debug ("POST RESPONSE=" + output.toString());
           }
 
           /* send request to delete appli */
@@ -282,8 +286,9 @@ public class DatagouvMLSListener {
           ret = ProcessLauncher.launch(commands, output, error);
           if (ret != 0) {
              log.error ("Error " + ret +"[" + error.toString() + "]");
+          } else {
+             log.debug ("APPLI DEL RESPONSE=" + output.toString());
           }
-          log.debug (output.toString());
 
           /* send requests to delete modules */
           for (String module : nodes) {
@@ -300,8 +305,9 @@ public class DatagouvMLSListener {
              ret = ProcessLauncher.launch(commands, output, error);
              if (ret != 0) {
                 log.error ("Error " + ret +"[" + error.toString() + "]");
+             } else {
+                log.debug ("MODULE DEL RESPONSE=" + output.toString());
              }
-             log.debug (output.toString());
           }
 
 
