@@ -54,6 +54,7 @@ public class Ceph extends DataStore {
 
        PseudodirAttributes pattribs = new PseudodirAttributes();
        pattribs.setName(spseudodir);
+       pattribs.setObjectPrefix(spseudodir);
        pattribs.setQualifiedName(protocol + "://" + ipAddress + "/" + sbucket + "/" + spseudodir);
 
        Entity ibucket = new Entity();

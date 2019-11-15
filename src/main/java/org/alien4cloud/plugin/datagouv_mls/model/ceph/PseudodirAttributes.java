@@ -13,5 +13,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PseudodirAttributes extends Attributes {
+
+   String objectPrefix;
+
    Entity bucket;
 }

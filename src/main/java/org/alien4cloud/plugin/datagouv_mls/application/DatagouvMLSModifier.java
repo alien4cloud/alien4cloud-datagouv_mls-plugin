@@ -74,6 +74,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        String now = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(new Date()).toString();
        guid = -1;
        String appliId = getGuid();
+       String appVersion = context.getEnvironmentContext().get().getEnvironment().getVersion();
 
        /* application : list of entities & referredEntities */
        Application fullAppli = new Application();
@@ -90,7 +91,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        String appliName = context.getEnvironmentContext().get().getApplication().getName() + "-" +
                           context.getEnvironmentContext().get().getEnvironment().getName();
        attribs.setQualifiedName(appliName);
-       attribs.setVersion(context.getEnvironmentContext().get().getEnvironment().getVersion());
+       attribs.setVersion(appVersion);
        attribs.setStartTime(now);
        appli.setAttributes(attribs);
        appli.setGuid(appliId);
@@ -122,6 +123,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
              attribs.setName(nodeName);
              attribs.setQualifiedName(nodeName + "-" + appliName);
              attribs.setStartTime(now);
+             attribs.setVersion(appVersion);
              Entity instance = new Entity();
              instance.setTypeName(DatagouvMLSConstants.MODULE_NAME);
              instance.setGuid(moduleGuid);

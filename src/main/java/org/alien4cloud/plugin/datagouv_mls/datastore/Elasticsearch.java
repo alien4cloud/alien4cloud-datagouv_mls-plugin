@@ -35,6 +35,13 @@ public class Elasticsearch extends DataStore {
           ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.http.ip_address");
        }
 
+       /* get protocol from  capability property of service */
+       String protocol = "";
+       Capability http = safe(service.getCapabilities()).get("http");
+       if (http != null) {
+          protocol = PropertyUtil.getScalarValue(safe(http.getProperties()).get("protocol"));
+       }
+
        /* process index */
        String sindex = "";
        sindex = PropertyUtil.getScalarValue(safe(service.getProperties()).get("index_basename"));
@@ -47,6 +54,7 @@ public class Elasticsearch extends DataStore {
        IndexAttributes idxattribs = new IndexAttributes();
        idxattribs.setName(sindex);
        idxattribs.setQualifiedName(sindex + "." + ipAddress);
+       idxattribs.setUri(protocol+"://" + ipAddress + "/" + sindex);
 
        Entity icluster = new Entity();
        icluster.setGuid(clusterGuid);
