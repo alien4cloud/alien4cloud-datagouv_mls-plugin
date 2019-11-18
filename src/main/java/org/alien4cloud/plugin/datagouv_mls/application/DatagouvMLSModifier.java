@@ -93,6 +93,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        attribs.setQualifiedName(appliName);
        attribs.setVersion(appVersion);
        attribs.setStartTime(now);
+       attribs.setStatus("PROPOSED");
        appli.setAttributes(attribs);
        appli.setGuid(appliId);
 

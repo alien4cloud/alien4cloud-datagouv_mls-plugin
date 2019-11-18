@@ -113,7 +113,7 @@ public class DatagouvMLSListener {
        attribs.setQualifiedName(deployment.getSourceName() + "-" + env.getName());
        attribs.setVersion(deployment.getVersionId());
        attribs.setStartTime((new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(deployment.getStartDate()).toString());
-       attribs.setStatus("commit");
+       attribs.setStatus("VALIDATED");
        appli.setAttributes(attribs);
 
        List<Entity> entities = new ArrayList<Entity>();
@@ -164,6 +164,7 @@ public class DatagouvMLSListener {
        log.info ("Processing undeployment " + deployment.getId());
 
        ApplicationEnvironment env = environmentService.getOrFail(deployment.getEnvironmentId());
+       String appVersion = deployment.getVersionId();
 
        String startTime = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(deployment.getStartDate()).toString();
        String endTime = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(deployment.getEndDate()).toString();
@@ -185,7 +186,7 @@ public class DatagouvMLSListener {
        Attributes attribs = new Attributes();
        attribs.setName(deployment.getSourceName());
        attribs.setQualifiedName(appliName);
-       attribs.setVersion(deployment.getVersionId());
+       attribs.setVersion(appVersion);
        attribs.setStartTime(startTime);
        attribs.setEndTime(endTime);
        appli.setAttributes(attribs);
@@ -216,6 +217,7 @@ public class DatagouvMLSListener {
              nodes.add(nodeName + "-" + appliName);
              attribs.setStartTime(startTime);
              attribs.setEndTime(endTime);
+             attribs.setVersion(appVersion);
              Entity instance = new Entity();
              instance.setTypeName(DatagouvMLSConstants.MODULE_NAME);
              instance.setGuid(moduleGuid);
