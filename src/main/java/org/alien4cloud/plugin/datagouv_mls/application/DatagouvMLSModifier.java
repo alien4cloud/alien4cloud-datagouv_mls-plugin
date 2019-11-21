@@ -1,13 +1,18 @@
 package org.alien4cloud.plugin.datagouv_mls.application;
 
+import alien4cloud.common.MetaPropertiesService;
+import alien4cloud.model.common.MetaPropertyTarget;
 import alien4cloud.paas.wf.validation.WorkflowValidator;
 import alien4cloud.tosca.context.ToscaContext;
 import alien4cloud.tosca.context.ToscaContextual;
 import static alien4cloud.utils.AlienUtils.safe;
+import alien4cloud.utils.PropertyUtil;
 
+import org.alien4cloud.alm.deployment.configuration.flow.EnvironmentContext;
 import org.alien4cloud.alm.deployment.configuration.flow.FlowExecutionContext;
 import org.alien4cloud.alm.deployment.configuration.flow.TopologyModifierSupport;
 import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
+import org.alien4cloud.tosca.model.definitions.ComplexPropertyValue;
 import org.alien4cloud.tosca.model.definitions.Operation;
 import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
@@ -20,6 +25,8 @@ import org.alien4cloud.plugin.datagouv_mls.utils.ProcessLauncher;
 import org.alien4cloud.plugin.datagouv_mls.utils.TopologyUtils;
 import org.alien4cloud.plugin.datagouv_mls.datastore.DataStore;
 import org.alien4cloud.plugin.datagouv_mls.model.*;
+import static org.alien4cloud.plugin.kubernetes.csar.Version.K8S_CSAR_VERSION;
+import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBE_NAMESPACE;
 
 import org.springframework.stereotype.Component;
 
@@ -29,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.annotation.Resource;
 import java.io.File;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,12 +44,17 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Component("datagouv_mls-modifier")
 public class DatagouvMLSModifier extends TopologyModifierSupport {
+
+    @Resource
+    private MetaPropertiesService metaPropertiesService;
 
     @Resource
     private DatagouvMLSConfiguration configuration;
@@ -53,6 +66,8 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        guid--;
        return ret;
     }
+
+    private static final String CUNAME_PROP = "Cas d'usage";
 
     @Override
     @ToscaContextual
@@ -261,8 +276,96 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 }
              }
           }
+
+          /* send request to getPds */
+          commands = new String[4];
+          commands[0] = "curl";
+          commands[1] = "-u";
+          commands[2] = configuration.getGetPdsCredentials();
+          commands[3] = configuration.getGetPdsUrl() + URLEncoder.encode(appliName, StandardCharsets.UTF_8.toString());
+          output = new StringBuffer();
+          error = new StringBuffer();
+
+          ret = ProcessLauncher.launch(commands, output, error);
+          if (ret != 0) {
+             log.error ("Error " + ret +"[" + error.toString() + "]");
+          } else {
+             log.debug ("GET PDS RESPONSE=" + output.toString());
+             Application retAppli = (new ObjectMapper()).readValue(output.toString(), Application.class);
+
+             if ((retAppli.getEntities() == null) || (retAppli.getEntities().size() == 0)) {
+                log.error ("DataGouv GetPds response contains no entity !");
+             } else {
+                Entity pAppli = retAppli.getEntities().get(0);
+                if ((pAppli.getTypeName() == null) || (!pAppli.getTypeName().equals(DatagouvMLSConstants.APPLI_NAME))) {
+                   log.error ("DataGouv response contains no " + DatagouvMLSConstants.APPLI_NAME + "!");
+                } else if ((pAppli.getClassifications() == null) || 
+                           (pAppli.getClassifications().size() == 0)) {
+                   log.info ("DataGouv GetPds response contains no " + DatagouvMLSConstants.CLASSIFICATION_NAME);
+                } else {
+                   String level = null;
+                   boolean found = false;
+                   Iterator<Classification> iter = pAppli.getClassifications().iterator();
+
+                   while (iter.hasNext() && !found) {
+                      Classification classif = iter.next();
+                      if (classif.getTypeName().equals(DatagouvMLSConstants.CLASSIFICATION_NAME)) {
+                         found = true;
+                         level = classif.getAttributes().getLevel();
+                      }
+                   }
+
+                   if (!found) {
+                      log.info ("DataGouv GetPds response contains no " + DatagouvMLSConstants.CLASSIFICATION_NAME);
+                   } else {
+                      processPds (topology, context, level);
+                   }
+                }
+             }
+          }
+
        } catch (Exception e) {
-          log.error ("Got exception:" + e.getMessage());
+          log.error ("Got exception:" + e.getMessage(), e);
        }
+    }
+
+    private void processPds (Topology topology, FlowExecutionContext context, String level) {
+
+       /* create namespace node to be processed bu kubernetes plugin */
+       NodeTemplate kubeNSNode = addNodeTemplate(null, topology, "Namespace", K8S_TYPES_KUBE_NAMESPACE, K8S_CSAR_VERSION);
+
+       /* get "Cas d'usage" from meta property */
+       String cuname = null;
+       String cuNameMetaPropertyKey = this.metaPropertiesService.getMetapropertykeyByName(CUNAME_PROP, MetaPropertyTarget.APPLICATION);
+
+       if (cuNameMetaPropertyKey != null) {
+          Optional<EnvironmentContext> ec = context.getEnvironmentContext();
+          if (ec.isPresent() && cuNameMetaPropertyKey != null) {
+             EnvironmentContext env = ec.get();
+             Map<String, String> metaProperties = safe(env.getApplication().getMetaProperties());
+             String sCuname = metaProperties.get(cuNameMetaPropertyKey);
+             if ((sCuname!=null) && !sCuname.equals("")) {
+                 cuname = sCuname;
+             }
+         }
+       }
+       if (cuname == null) {
+          log.warn ("Can not find " + CUNAME_PROP);
+          cuname = "default";
+       }
+
+       /* generate namespace name */
+       String namespace = ("cu-p-" + context.getEnvironmentContext().get().getEnvironment().getName() + "-" + cuname + 
+                          "-" + context.getEnvironmentContext().get().getApplication().getName()).toLowerCase();
+       setNodePropertyPathValue(null, topology, kubeNSNode, "namespace", new ScalarPropertyValue(namespace));
+       setNodePropertyPathValue(null, topology, kubeNSNode, "apiVersion", new ScalarPropertyValue("v1"));
+
+       /* build metadata with annotation for env from PDS level */
+       Map<String,Object> metadata = new HashMap<String,Object>();
+       Map<String,Object> annotations = new HashMap<String,Object>();
+       annotations.put ("scheduler.alpha.kubernetes.io/node-selector", new ScalarPropertyValue("env=" + level.toLowerCase()));
+       metadata.put("annotations", annotations);
+       setNodePropertyPathValue(null, topology, kubeNSNode, "metadata", new ComplexPropertyValue(metadata));
+
     }
 }

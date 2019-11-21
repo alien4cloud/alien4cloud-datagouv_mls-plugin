@@ -114,6 +114,12 @@
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>alien4cloud</groupId>
+      <artifactId>alien4cloud-kubernetes-plugin</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
     <!-- others -->
     <dependency>
       <groupId>org.projectlombok</groupId>

@@ -26,4 +26,7 @@ public class DatagouvMLSConfiguration {
     private String applicationDeleteCredentials;
     private String applicationDeleteAppliUrl;
     private String applicationDeleteModuleUrl;
+
+    private String getPdsCredentials;
+    private String getPdsUrl;
 }

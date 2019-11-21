@@ -15,3 +15,6 @@ In alien4cloud main configuration file, set:
 - datagouv_mls.applicationDeleteCredentials : credentials user:password (application undeployment)
 - datagouv_mls.applicationDeleteAppliUrl : Application delete URL (application undeployment)
 - datagouv_mls.applicationDeleteModuleUrl : Module delete URL (application undeployment)
+- datagouv_mls.getPdsCredentials : credentials user:password (read application PDS)
+- datagouv_mls.getPdsUrl : Post requests URL (read application PDS)
+
