@@ -220,16 +220,17 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
           Path path = Files.createTempFile("dgv", ".json");
           Files.write(path, json.getBytes(StandardCharsets.UTF_8));
 
-          String[] commands = new String[9];
+          String[] commands = new String[10];
           commands[0] = "curl";
-          commands[1] = "-X";
-          commands[2] = "POST";
-          commands[3] = "-u";
-          commands[4] = configuration.getApplicationPostCredentials();
-          commands[5] = "-d@" + path.toFile().getAbsolutePath();
-          commands[6] = "-H";
-          commands[7] = "Content-type: application/json";
-          commands[8] = configuration.getApplicationPostUrl();
+          commands[1] = "-k";
+          commands[2] = "-X";
+          commands[3] = "POST";
+          commands[4] = "-u";
+          commands[5] = configuration.getApplicationPostCredentials();
+          commands[6] = "-d@" + path.toFile().getAbsolutePath();
+          commands[7] = "-H";
+          commands[8] = "Content-type: application/json";
+          commands[9] = configuration.getApplicationPostUrl();
           StringBuffer output = new StringBuffer();
           StringBuffer error = new StringBuffer();
 
@@ -278,11 +279,12 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
           }
 
           /* send request to getPds */
-          commands = new String[4];
+          commands = new String[5];
           commands[0] = "curl";
-          commands[1] = "-u";
-          commands[2] = configuration.getGetPdsCredentials();
-          commands[3] = configuration.getGetPdsUrl() + URLEncoder.encode(appliName, StandardCharsets.UTF_8.toString());
+          commands[1] = "-k";
+          commands[2] = "-u";
+          commands[3] = configuration.getGetPdsCredentials();
+          commands[4] = configuration.getGetPdsUrl() + URLEncoder.encode(appliName, StandardCharsets.UTF_8.toString());
           output = new StringBuffer();
           error = new StringBuffer();
 

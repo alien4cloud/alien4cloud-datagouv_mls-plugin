@@ -127,16 +127,17 @@ public class DatagouvMLSListener {
           Path path = Files.createTempFile("dgv", ".json");
           Files.write(path, json.getBytes(StandardCharsets.UTF_8));
 
-          String[] commands = new String[9];
+          String[] commands = new String[10];
           commands[0] = "curl";
-          commands[1] = "-X";
-          commands[2] = "POST";
-          commands[3] = "-u";
-          commands[4] = configuration.getApplicationPostCredentials();
-          commands[5] = "-d@" + path.toFile().getAbsolutePath();
-          commands[6] = "-H";
-          commands[7] = "Content-type: application/json";
-          commands[8] = configuration.getApplicationPostUrl();
+          commands[1] = "-k";
+          commands[2] = "-X";
+          commands[3] = "POST";
+          commands[4] = "-u";
+          commands[5] = configuration.getApplicationPostCredentials();
+          commands[6] = "-d@" + path.toFile().getAbsolutePath();
+          commands[7] = "-H";
+          commands[8] = "Content-type: application/json";
+          commands[9] = configuration.getApplicationPostUrl();
           StringBuffer output = new StringBuffer();
           StringBuffer error = new StringBuffer();
 
@@ -253,16 +254,17 @@ public class DatagouvMLSListener {
           Path path = Files.createTempFile("dgv", ".json");
           Files.write(path, json.getBytes(StandardCharsets.UTF_8));
 
-          String[] commands = new String[9];
+          String[] commands = new String[10];
           commands[0] = "curl";
-          commands[1] = "-X";
-          commands[2] = "POST";
-          commands[3] = "-u";
-          commands[4] = configuration.getApplicationPostCredentials();
-          commands[5] = "-d@" + path.toFile().getAbsolutePath();
-          commands[6] = "-H";
-          commands[7] = "Content-type: application/json";
-          commands[8] = configuration.getApplicationPostUrl();
+          commands[1] = "-k";
+          commands[2] = "-X";
+          commands[3] = "POST";
+          commands[4] = "-u";
+          commands[5] = configuration.getApplicationPostCredentials();
+          commands[6] = "-d@" + path.toFile().getAbsolutePath();
+          commands[7] = "-H";
+          commands[8] = "Content-type: application/json";
+          commands[9] = configuration.getApplicationPostUrl();
           StringBuffer output = new StringBuffer();
           StringBuffer error = new StringBuffer();
 
@@ -275,13 +277,14 @@ public class DatagouvMLSListener {
           }
 
           /* send request to delete appli */
-          commands = new String[6];
+          commands = new String[7];
           commands[0] = "curl";
-          commands[1] = "-X";
-          commands[2] = "DELETE";
-          commands[3] = "-u";
-          commands[4] = configuration.getApplicationDeleteCredentials();
-          commands[5] = configuration.getApplicationDeleteAppliUrl() + URLEncoder.encode(appliName, StandardCharsets.UTF_8.toString());
+          commands[1] = "-k";
+          commands[2] = "-X";
+          commands[3] = "DELETE";
+          commands[4] = "-u";
+          commands[5] = configuration.getApplicationDeleteCredentials();
+          commands[6] = configuration.getApplicationDeleteAppliUrl() + URLEncoder.encode(appliName, StandardCharsets.UTF_8.toString());
           output = new StringBuffer();
           error = new StringBuffer();
 
@@ -294,13 +297,14 @@ public class DatagouvMLSListener {
 
           /* send requests to delete modules */
           for (String module : nodes) {
-             commands = new String[6];
+             commands = new String[7];
              commands[0] = "curl";
-             commands[1] = "-X";
-             commands[2] = "DELETE";
-             commands[3] = "-u";
-             commands[4] = configuration.getApplicationDeleteCredentials();
-             commands[5] = configuration.getApplicationDeleteModuleUrl() + URLEncoder.encode(module, StandardCharsets.UTF_8.toString());
+             commands[1] = "-k";
+             commands[2] = "-X";
+             commands[3] = "DELETE";
+             commands[4] = "-u";
+             commands[5] = configuration.getApplicationDeleteCredentials();
+             commands[6] = configuration.getApplicationDeleteModuleUrl() + URLEncoder.encode(module, StandardCharsets.UTF_8.toString());
              output = new StringBuffer();
              error = new StringBuffer();
 

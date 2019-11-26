@@ -58,13 +58,14 @@ public class DatagouvMLSModuleDelete implements ApplicationListener<BeforeArchiv
 
             if (keepIt) {
                 log.info ("Processing " + archiveName);
-                String[] commands = new String[6];
+                String[] commands = new String[7];
                 commands[0] = "curl";
-                commands[1] = "-X";
-                commands[2] = "DELETE";
-                commands[3] = "-u";
-                commands[4] = configuration.getModuleDeleteCredentials();
-                commands[5] = configuration.getModuleDeleteUrl() + archiveName;
+                commands[1] = "-k";
+                commands[2] = "-X";
+                commands[3] = "DELETE";
+                commands[4] = "-u";
+                commands[5] = configuration.getModuleDeleteCredentials();
+                commands[6] = configuration.getModuleDeleteUrl() + archiveName;
                 StringBuffer output = new StringBuffer();
                 StringBuffer error = new StringBuffer();
 
