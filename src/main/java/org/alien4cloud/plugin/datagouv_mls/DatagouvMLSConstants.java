@@ -20,6 +20,8 @@ public class DatagouvMLSConstants {
     public static final String APPLI_NAME = "artemis_application_instance";
     public static final String MODULE_INSTANCE_NAME = "artemis_module_instance";
 
+    public static final String TOKEN_TAGNAME = "MLS_tokenid";
+
     // known datastores
     public static Map<String, Class> dataStoreTypes = Stream.of(new Object[][] { 
         { "artemis.redis.pub.capabilities.Redis", Redis.class }, 

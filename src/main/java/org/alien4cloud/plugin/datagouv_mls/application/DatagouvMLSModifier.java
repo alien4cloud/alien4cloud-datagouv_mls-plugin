@@ -2,10 +2,12 @@ package org.alien4cloud.plugin.datagouv_mls.application;
 
 import alien4cloud.common.MetaPropertiesService;
 import alien4cloud.model.common.MetaPropertyTarget;
+import alien4cloud.model.common.Tag;
 import alien4cloud.paas.wf.validation.WorkflowValidator;
 import alien4cloud.tosca.context.ToscaContext;
 import alien4cloud.tosca.context.ToscaContextual;
 import static alien4cloud.utils.AlienUtils.safe;
+import alien4cloud.utils.CloneUtil;
 import alien4cloud.utils.PropertyUtil;
 
 import org.alien4cloud.alm.deployment.configuration.flow.EnvironmentContext;
@@ -247,6 +249,21 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
              } else for (Entity retEntity : retAppli.getEntities()) {
                 if (retEntity.getTypeName().equals(DatagouvMLSConstants.MODULE_INSTANCE_NAME)) {
 
+                   NodeTemplate node = topology.getNodeTemplates().get(retEntity.getAttributes().getName());
+                   if (node != null) {
+                      Tag tkTag = new Tag();
+                      tkTag.setName(DatagouvMLSConstants.TOKEN_TAGNAME);
+                      tkTag.setValue(retEntity.getAttributes().getTokenid());
+                      List<Tag> tags = node.getTags();
+                      if (tags == null) {
+                         tags = new ArrayList<Tag>();
+                      }
+                      tags.add(tkTag);
+                      node.setTags(tags);
+                   } else {
+                       log.error ("Cannot find module " + retEntity.getAttributes().getName());
+                   }
+
                    List<NodeTemplate> serviceNodes = nodesToServices.get(retEntity.getAttributes().getName());
                    if (serviceNodes == null) {
                       log.warn("Can not find services for " + retEntity.getAttributes().getName());
@@ -276,6 +293,8 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                    }
                 }
              }
+
+             context.getExecutionCache().put(FlowExecutionContext.INITIAL_TOPOLOGY, CloneUtil.clone(topology));
           }
 
           /* send request to getPds */
