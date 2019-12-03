@@ -8,6 +8,7 @@ import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
 import org.alien4cloud.tosca.model.templates.Capability;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.ServiceNodeTemplate;
+import org.alien4cloud.tosca.normative.constants.ToscaFunctionConstants;
 import org.alien4cloud.plugin.datagouv_mls.model.Attributes;
 import org.alien4cloud.plugin.datagouv_mls.model.Entity;
 import org.alien4cloud.plugin.datagouv_mls.model.elasticsearch.*;
@@ -75,6 +76,16 @@ public class Elasticsearch extends DataStore {
        entities.put (clusterGuid, cluster);
 
        return entities;
+    }
+
+    public String updateInput (String function, List<String> params, String user, String password) {
+       if (function.equals(ToscaFunctionConstants.GET_PROPERTY) && params.get(2).equals("http") && params.get(3).equals("username")) {
+          return user;
+       } else if (function.equals(ToscaFunctionConstants.GET_PROPERTY) && params.get(2).equals("http") && params.get(3).equals("password")) {
+          return password;
+       } else {
+          return null;
+       }
     }
 
 }
