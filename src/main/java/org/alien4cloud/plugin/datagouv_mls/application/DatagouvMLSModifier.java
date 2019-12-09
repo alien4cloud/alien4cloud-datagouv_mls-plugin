@@ -312,36 +312,12 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
              log.error ("Error " + ret +"[" + error.toString() + "]");
           } else {
              log.debug ("GET PDS RESPONSE=" + output.toString());
-             Application retAppli = (new ObjectMapper()).readValue(output.toString(), Application.class);
+             Pds pds = (new ObjectMapper()).readValue(output.toString(), Pds.class);
 
-             if ((retAppli.getEntities() == null) || (retAppli.getEntities().size() == 0)) {
-                log.error ("DataGouv GetPds response contains no entity !");
+             if ((pds.getErreur() != null) && !pds.getErreur().trim().equals("")) { 
+                log.error ("DataGouv GetPds error: " + pds.getErreur());
              } else {
-                Entity pAppli = retAppli.getEntities().get(0);
-                if ((pAppli.getTypeName() == null) || (!pAppli.getTypeName().equals(DatagouvMLSConstants.APPLI_NAME))) {
-                   log.error ("DataGouv response contains no " + DatagouvMLSConstants.APPLI_NAME + "!");
-                } else if ((pAppli.getClassifications() == null) || 
-                           (pAppli.getClassifications().size() == 0)) {
-                   log.info ("DataGouv GetPds response contains no " + DatagouvMLSConstants.CLASSIFICATION_NAME);
-                } else {
-                   String level = null;
-                   boolean found = false;
-                   Iterator<Classification> iter = pAppli.getClassifications().iterator();
-
-                   while (iter.hasNext() && !found) {
-                      Classification classif = iter.next();
-                      if (classif.getTypeName().equals(DatagouvMLSConstants.CLASSIFICATION_NAME)) {
-                         found = true;
-                         level = classif.getAttributes().getLevel();
-                      }
-                   }
-
-                   if (!found) {
-                      log.info ("DataGouv GetPds response contains no " + DatagouvMLSConstants.CLASSIFICATION_NAME);
-                   } else {
-                      processPds (topology, context, level);
-                   }
-                }
+                processPds (topology, context, pds.getZone());
              }
           }
 
@@ -377,15 +353,21 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
        /* generate namespace name */
        String namespace = ("cu-p-" + context.getEnvironmentContext().get().getEnvironment().getName() + "-" + cuname + 
-                          "-" + context.getEnvironmentContext().get().getApplication().getName()).toLowerCase();
+                          "--" + context.getEnvironmentContext().get().getApplication().getName()).toLowerCase();
        setNodePropertyPathValue(null, topology, kubeNSNode, "namespace", new ScalarPropertyValue(namespace));
        setNodePropertyPathValue(null, topology, kubeNSNode, "apiVersion", new ScalarPropertyValue("v1"));
 
        /* build metadata with annotation for env from PDS level */
        Map<String,Object> metadata = new HashMap<String,Object>();
+       Map<String,Object> labels = new HashMap<String,Object>();
+       labels.put ("ns-zone-de-sensibilite", new ScalarPropertyValue(level.toLowerCase()));
+       labels.put ("ns-artemis-role", new ScalarPropertyValue("cas-usage"));
+       labels.put ("ns-pf-role", new ScalarPropertyValue("cas-usage"));
+       labels.put ("ns-clef-namespace", new ScalarPropertyValue(namespace));
        Map<String,Object> annotations = new HashMap<String,Object>();
-       annotations.put ("scheduler.alpha.kubernetes.io/node-selector", new ScalarPropertyValue("env=" + level.toLowerCase()));
+       annotations.put ("scheduler.alpha.kubernetes.io/node-selector", new ScalarPropertyValue("ns-zone-de-sensibilite=" + level.toLowerCase()));
        metadata.put("annotations", annotations);
+       metadata.put("labels", labels);
        setNodePropertyPathValue(null, topology, kubeNSNode, "metadata", new ComplexPropertyValue(metadata));
 
     }
