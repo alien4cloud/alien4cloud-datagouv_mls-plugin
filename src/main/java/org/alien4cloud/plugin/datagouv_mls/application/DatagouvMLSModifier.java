@@ -13,6 +13,7 @@ import alien4cloud.utils.PropertyUtil;
 import org.alien4cloud.alm.deployment.configuration.flow.EnvironmentContext;
 import org.alien4cloud.alm.deployment.configuration.flow.FlowExecutionContext;
 import org.alien4cloud.alm.deployment.configuration.flow.TopologyModifierSupport;
+import org.alien4cloud.tosca.model.CSARDependency;
 import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ComplexPropertyValue;
 import org.alien4cloud.tosca.model.definitions.Operation;
@@ -329,7 +330,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
     private void processPds (Topology topology, FlowExecutionContext context, String level) {
 
        /* create namespace node to be processed bu kubernetes plugin */
-       NodeTemplate kubeNSNode = addNodeTemplate(null, topology, "Namespace", K8S_TYPES_KUBE_NAMESPACE, K8S_CSAR_VERSION);
+       NodeTemplate kubeNSNode = addNodeTemplate(null, topology, "Namespace", K8S_TYPES_KUBE_NAMESPACE, getK8SCsarVersion(topology));
 
        /* get "Cas d'usage" from meta property */
        String cuname = null;
@@ -370,5 +371,14 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        metadata.put("labels", labels);
        setNodePropertyPathValue(null, topology, kubeNSNode, "metadata", new ComplexPropertyValue(metadata));
 
+    }
+
+    private String getK8SCsarVersion(Topology topology) {
+        for (CSARDependency dep : topology.getDependencies()) {
+            if (dep.getName().equals("org.alien4cloud.kubernetes.api")) {
+                return dep.getVersion();
+            }
+        }
+        return K8S_CSAR_VERSION;
     }
 }
