@@ -316,6 +316,8 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
              if ((pds.getErreur() != null) && !pds.getErreur().trim().equals("")) { 
                 log.error ("DataGouv GetPds error: " + pds.getErreur());
+             } else if ((pds.getZone() == null) || pds.getZone().trim().equals(""))  {
+                log.error ("DataGouv GetPds response contains no zone!");
              } else {
                 processPds (topology, context, pds.getZone());
              }
