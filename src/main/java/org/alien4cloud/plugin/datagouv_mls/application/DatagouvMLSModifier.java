@@ -1,6 +1,8 @@
 package org.alien4cloud.plugin.datagouv_mls.application;
 
 import alien4cloud.common.MetaPropertiesService;
+import alien4cloud.deployment.DeploymentRuntimeStateService;
+import alien4cloud.exception.NotFoundException;
 import alien4cloud.model.common.MetaPropertyTarget;
 import alien4cloud.model.common.Tag;
 import alien4cloud.paas.wf.validation.WorkflowValidator;
@@ -38,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.annotation.Resource;
+import javax.inject.Inject;
 import java.io.File;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -61,6 +64,9 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
     @Resource
     private DatagouvMLSConfiguration configuration;
+
+    @Inject
+    private DeploymentRuntimeStateService deploymentRuntimeStateService;
 
     private int guid = -1;
 
@@ -89,6 +95,15 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
     private void doProcess(Topology topology, FlowExecutionContext context) {
        
+       /* check whether application/environment is deployed or not */
+       try {
+          if (deploymentRuntimeStateService.getRuntimeTopologyFromEnvironment(context.getEnvironmentContext().get().getEnvironment().getId()).isDeployed()) {
+             log.info ("Topology is deployed, nothing to do.");
+             return;
+          }
+       }
+       catch (NotFoundException e) {} // not deployed yet
+
        String now = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(new Date()).toString();
        guid = -1;
        String appliId = getGuid();
