@@ -15,4 +15,5 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class Pds {
    String zone;
    String erreur;
+   String localizedMessage;
 }

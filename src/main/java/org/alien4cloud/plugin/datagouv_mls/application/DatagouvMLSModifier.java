@@ -68,6 +68,9 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
     @Inject
     private DeploymentRuntimeStateService deploymentRuntimeStateService;
 
+    @Inject
+    private DatagouvMLSListener dgvListener;
+
     private int guid = -1;
 
     private String getGuid() {
@@ -312,6 +315,9 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
              context.getExecutionCache().put(FlowExecutionContext.INITIAL_TOPOLOGY, CloneUtil.clone(topology));
           }
+
+          /* store application description to be used by DataGouvMLSListener on validatation phase */
+          dgvListener.storeAppli (appliName, fullAppli);
 
           /* send request to getPds */
           commands = new String[5];
