@@ -11,17 +11,10 @@ import alien4cloud.paas.IPaasEventService;
 import alien4cloud.paas.exception.PaaSDeploymentException;
 import alien4cloud.paas.model.AbstractMonitorEvent;
 import alien4cloud.paas.model.PaaSDeploymentStatusMonitorEvent;
-import alien4cloud.tosca.context.ToscaContext;
-import static alien4cloud.utils.AlienUtils.safe;
-
-import org.alien4cloud.tosca.model.templates.NodeTemplate;
-import org.alien4cloud.tosca.model.templates.Topology;
-import org.alien4cloud.tosca.model.types.NodeType;
 
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConfiguration;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConstants;
 import org.alien4cloud.plugin.datagouv_mls.model.Application;
-import org.alien4cloud.plugin.datagouv_mls.model.Attributes;
 import org.alien4cloud.plugin.datagouv_mls.model.Entity;
 import org.alien4cloud.plugin.datagouv_mls.model.Pds;
 import org.alien4cloud.plugin.datagouv_mls.utils.ProcessLauncher;
@@ -42,9 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -218,85 +209,14 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
 
        ApplicationEnvironment env = environmentService.getOrFail(deployment.getEnvironmentId());
        String appVersion = deployment.getVersionId();
-
-       String startTime = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(deployment.getStartDate()).toString();
+       String appliName = deployment.getSourceName() + "-" + env.getName();
+       
        String endTime = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(deployment.getEndDate()).toString();
 
-       /* whole application */
-       Application fullAppli = new Application();
-       List<Entity> entities = new ArrayList<Entity>();
-       Map<String,Entity> referredEntities = new HashMap<String,Entity>();
-       fullAppli.setEntities(entities);
-       fullAppli.setReferredEntities(referredEntities);
-
-       /* entity describing the application */
-       Entity appli = new Entity();
-       guid = -1;
-       String appliId = getGuid();
-       String appliName = deployment.getSourceName() + "-" + env.getName();
-       appli.setTypeName (DatagouvMLSConstants.APPLI_NAME);
-       appli.setGuid (appliId);
-       Attributes attribs = new Attributes();
-       attribs.setName(deployment.getSourceName());
-       attribs.setQualifiedName(appliName);
-       attribs.setVersion(appVersion);
-       attribs.setStartTime(startTime);
-       attribs.setEndTime(endTime);
-       appli.setAttributes(attribs);
-
-       entities.add(appli);
-
-       Topology topology = deploymentRuntimeStateService.getUnprocessedTopology(deployment.getId());
-       ToscaContext.init(topology.getDependencies());
-       /* process nodes */
-       Map<String, NodeTemplate> nodeTemplates = topology.getNodeTemplates();
-       /* list of nodes names */
-       List<String> nodes = new ArrayList<String>();
-       for (String nodeName : nodeTemplates.keySet()) {
-          /* nodes to be added contain a "container" property */
-          if ( safe(nodeTemplates.get(nodeName).getProperties()).get("container") != null) {
-             log.info ("Processing node " + nodeName);
-             NodeType nodeType = ToscaContext.get(NodeType.class, nodeTemplates.get(nodeName).getType());
-             String version = nodeType.getArchiveVersion();
-
-             String moduleGuid = getGuid();
-
-             /* module entity descriptor */
-             Entity module = new Entity();
-             module.setTypeName(DatagouvMLSConstants.MODULE_INSTANCE_NAME);
-             attribs = new Attributes();
-             attribs.setName(nodeName);
-             attribs.setQualifiedName(nodeName + "-" + appliName);
-             nodes.add(nodeName + "-" + appliName);
-             attribs.setStartTime(startTime);
-             attribs.setEndTime(endTime);
-             attribs.setVersion(appVersion);
-             Entity instance = new Entity();
-             instance.setTypeName(DatagouvMLSConstants.MODULE_NAME);
-             instance.setGuid(moduleGuid);
-             attribs.setInstanceOf(instance);
-             Entity member = new Entity();
-             member.setTypeName(DatagouvMLSConstants.APPLI_NAME);
-             member.setGuid(appliId);
-             attribs.setMemberOf(member);
-             module.setAttributes(attribs);
-             entities.add(module);
-
-             /* module reference entity */
-             Entity refModule = new Entity();
-             refModule.setGuid(moduleGuid);
-             refModule.setTypeName(DatagouvMLSConstants.MODULE_NAME);
-             attribs = new Attributes();
-             String qname = nodeTemplates.get(nodeName).getType();
-             attribs.setName(qname.substring(qname.lastIndexOf(".")+1));
-             attribs.setQualifiedName(qname);
-             attribs.setVersion(version);
-             refModule.setAttributes(attribs);
-
-             referredEntities.put(moduleGuid, refModule);
-          }
+       Application fullAppli = applis.get(appliName);
+       for (Entity entity : fullAppli.getEntities()) {
+          entity.getAttributes().setEndTime (endTime);
        }
-       ToscaContext.destroy();
 
        try {
           /* post JSON to update appli */
@@ -348,29 +268,33 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
           }
 
           /* send requests to delete modules */
-          for (String module : nodes) {
-             commands = new String[7];
-             commands[0] = "curl";
-             commands[1] = "-k";
-             commands[2] = "-X";
-             commands[3] = "DELETE";
-             commands[4] = "-u";
-             commands[5] = configuration.getApplicationDeleteCredentials();
-             commands[6] = configuration.getApplicationDeleteModuleUrl() + URLEncoder.encode(module, StandardCharsets.UTF_8.toString());
-             output = new StringBuffer();
-             error = new StringBuffer();
+          for (Entity entity : fullAppli.getEntities()) {
+             if (entity.getTypeName().equals(DatagouvMLSConstants.MODULE_INSTANCE_NAME)) {
+                commands = new String[7];
+                commands[0] = "curl";
+                commands[1] = "-k";
+                commands[2] = "-X";
+                commands[3] = "DELETE";
+                commands[4] = "-u";
+                commands[5] = configuration.getApplicationDeleteCredentials();
+                commands[6] = configuration.getApplicationDeleteModuleUrl() + 
+                                           URLEncoder.encode(entity.getAttributes().getQualifiedName(), 
+                                           StandardCharsets.UTF_8.toString());
+                output = new StringBuffer();
+                error = new StringBuffer();
 
-             ret = ProcessLauncher.launch(commands, output, error);
-             if (ret != 0) {
-                log.error ("Error " + ret +"[" + error.toString() + "]");
-             } else {
-                log.debug ("MODULE DEL RESPONSE=" + output.toString());
+                ret = ProcessLauncher.launch(commands, output, error);
+                if (ret != 0) {
+                   log.error ("Error " + ret +"[" + error.toString() + "]");
+                } else {
+                   log.debug ("MODULE DEL RESPONSE=" + output.toString());
+                }
              }
           }
 
 
        } catch (Exception e) {
-            log.error ("Got exception:" + e.getMessage());
+            log.error ("Got exception:", e);
        }
     }
 }
