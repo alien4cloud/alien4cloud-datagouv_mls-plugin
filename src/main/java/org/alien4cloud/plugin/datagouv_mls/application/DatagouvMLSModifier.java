@@ -352,6 +352,10 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
     private void processPds (Topology topology, FlowExecutionContext context, String level) {
 
+       if (!TopologyUtils.isK8S(topology)) {
+          return;
+       }
+
        /* create namespace node to be processed bu kubernetes plugin */
        NodeTemplate kubeNSNode = addNodeTemplate(null, topology, "Namespace", K8S_TYPES_KUBE_NAMESPACE, getK8SCsarVersion(topology));
 
