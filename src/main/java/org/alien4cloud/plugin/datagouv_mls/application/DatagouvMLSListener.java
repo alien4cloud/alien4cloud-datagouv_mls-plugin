@@ -1,10 +1,12 @@
 package org.alien4cloud.plugin.datagouv_mls.application;
 
 import alien4cloud.application.ApplicationEnvironmentService;
+import alien4cloud.common.MetaPropertiesService;
 import alien4cloud.deployment.DeploymentRuntimeStateService;
 import alien4cloud.deployment.DeploymentService;
 import alien4cloud.events.DeploymentCreatedEvent;
 import alien4cloud.model.application.ApplicationEnvironment;
+import alien4cloud.model.common.MetaPropertyTarget;
 import alien4cloud.model.deployment.Deployment;
 import alien4cloud.paas.IPaasEventListener;
 import alien4cloud.paas.IPaasEventService;
@@ -50,6 +52,9 @@ import java.util.Map;
 @Slf4j
 @Component("datagouv_mls-listener")
 public class DatagouvMLSListener implements ApplicationListener<DeploymentCreatedEvent> {
+
+    @Resource
+    private MetaPropertiesService metaPropertiesService;
 
     @Inject
     private ApplicationEnvironmentService environmentService;
@@ -254,14 +259,11 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
        /* list of nodes names */
        List<String> nodes = new ArrayList<String>();
        for (String nodeName : nodeTemplates.keySet()) {
-          /* nodes to be added contain a "container" property */
-          if ( safe(nodeTemplates.get(nodeName).getProperties()).get("container") != null) {
+          NodeType nodeType = ToscaContext.get(NodeType.class, nodeTemplates.get(nodeName).getType());
+          String typeCompo = getMetaprop(nodeType, DatagouvMLSConstants.COMPONENT_TYPE);
+          if ((typeCompo!=null) && typeCompo.equalsIgnoreCase("Module")) {
              log.info ("Processing node " + nodeName);
-             NodeType nodeType = ToscaContext.get(NodeType.class, nodeTemplates.get(nodeName).getType());
-             String version = "default";
-             if (nodeType != null) {
-                version = nodeType.getArchiveVersion();
-             }
+             String version = nodeType.getArchiveVersion();
 
              String moduleGuid = getGuid();
 
@@ -381,4 +383,15 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
             log.error ("Got exception:", e);
        }
     }
+
+    private String getMetaprop (NodeType node, String prop) {
+       String propKey = metaPropertiesService.getMetapropertykeyByName(prop, MetaPropertyTarget.COMPONENT);
+
+       if (propKey != null) {
+          return safe(node.getMetaProperties()).get(propKey);
+       }
+
+       return null;
+    }
+
 }

@@ -314,6 +314,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 }
              }
           }
+          context.getExecutionCache().put(FlowExecutionContext.INITIAL_TOPOLOGY, CloneUtil.clone(topology));
 
           /* store application description to be used by DataGouvMLSListener on validatation phase */
           dgvListener.storeAppli (appliName, fullAppli);
