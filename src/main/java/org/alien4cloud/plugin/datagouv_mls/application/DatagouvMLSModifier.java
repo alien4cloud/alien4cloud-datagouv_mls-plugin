@@ -142,9 +142,10 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        /* process nodes */
        Map<String, NodeTemplate> nodeTemplates = topology.getNodeTemplates();
        for (String nodeName : nodeTemplates.keySet()) {
-          /* nodes to be added contain a "container" property */
-          if ( safe(nodeTemplates.get(nodeName).getProperties()).get("container") != null) {
-             NodeType nodeType = ToscaContext.get(NodeType.class, nodeTemplates.get(nodeName).getType());
+          NodeType nodeType = ToscaContext.get(NodeType.class, nodeTemplates.get(nodeName).getType());
+
+          String typeCompo = getMetaprop(nodeType, DatagouvMLSConstants.COMPONENT_TYPE);
+          if ((typeCompo!=null) && typeCompo.equalsIgnoreCase("Module")) {
              String version = nodeType.getArchiveVersion();
              log.info ("Processing node " + nodeName);
 
@@ -312,8 +313,6 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                    }
                 }
              }
-
-             context.getExecutionCache().put(FlowExecutionContext.INITIAL_TOPOLOGY, CloneUtil.clone(topology));
           }
 
           /* store application description to be used by DataGouvMLSListener on validatation phase */
@@ -408,4 +407,15 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         }
         return K8S_CSAR_VERSION;
     }
+
+    private String getMetaprop (NodeType node, String prop) {
+       String propKey = metaPropertiesService.getMetapropertykeyByName(prop, MetaPropertyTarget.COMPONENT);
+
+       if (propKey != null) {
+          return safe(node.getMetaProperties()).get(propKey);
+       }
+
+       return null;
+    }
+
 }
