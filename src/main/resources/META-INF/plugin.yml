@@ -21,4 +21,7 @@ component_descriptors:
     name: Datagouv-MLS / applications deployment and undeployment
     description: >
       Plugin that publishes info about applications deployment and undeployment
-
+  - bean_name: datagouv_mls-redirection-sample
+    name: Datagouv-MLS / Redirection sample
+    description: >
+      Modifier to experiment redirection (randomly google search for a number)
