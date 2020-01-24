@@ -29,4 +29,6 @@ public class DatagouvMLSConfiguration {
 
     private String getPdsCredentials;
     private String getPdsUrl;
+
+    private String pdsIhmUrl;
 }
