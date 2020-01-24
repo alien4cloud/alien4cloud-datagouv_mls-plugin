@@ -8,6 +8,7 @@ import alien4cloud.model.common.Tag;
 import alien4cloud.paas.wf.validation.WorkflowValidator;
 import alien4cloud.tosca.context.ToscaContext;
 import alien4cloud.tosca.context.ToscaContextual;
+import alien4cloud.topology.task.RedirectionTask;
 import static alien4cloud.utils.AlienUtils.safe;
 import alien4cloud.utils.CloneUtil;
 import alien4cloud.utils.PropertyUtil;
@@ -235,6 +236,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
           }
        }
 
+       boolean gotPds = false;
        try {
           String json = (new ObjectMapper()).writeValueAsString(fullAppli);
           log.debug("JSON=" + json);
@@ -342,11 +344,19 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 log.error ("DataGouv GetPds response contains no zone!");
             } else {
                 processPds (topology, context, pds.getZone());
+                gotPds = true;
              }
           }
 
        } catch (Exception e) {
           log.error ("Got exception:" + e.getMessage(), e);
+       }
+
+       if (!gotPds) {
+          String url = configuration.getPdsIhmUrl() + appliName;
+          log.info("Redirection URL: " + url);
+          context.log().warn("Please use the following URL to continue : " + url);
+          context.log().error(new RedirectionTask(url));
        }
     }
 
