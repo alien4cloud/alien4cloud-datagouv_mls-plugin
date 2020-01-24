@@ -15,8 +15,15 @@ public class RedirectionModifier extends TopologyModifierSupport {
 
     private Random random = new Random();
 
+    private static int count = 0;
+
     @Override
     public void process(Topology topology, FlowExecutionContext context) {
+        count++;
+
+        if ((count % 2) == 1) {
+           return;
+        }
         // Let's randomly generate a DuckDuckGo URL searching images for a randomly generated number
         String url = String.format("https://duckduckgo.com/?q=%d&iar=images&iax=images&ia=images", random.nextInt(50));
         // This warn will be used in legacy A4C UI
