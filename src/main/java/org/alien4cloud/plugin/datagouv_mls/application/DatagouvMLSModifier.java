@@ -25,6 +25,7 @@ import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.RelationshipTemplate;
 import org.alien4cloud.tosca.model.templates.Topology;
 import org.alien4cloud.tosca.model.types.NodeType;
+import org.alien4cloud.tosca.utils.ToscaTypeUtils;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConfiguration;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConstants;
 import org.alien4cloud.plugin.datagouv_mls.utils.ProcessLauncher;
@@ -33,6 +34,7 @@ import org.alien4cloud.plugin.datagouv_mls.datastore.DataStore;
 import org.alien4cloud.plugin.datagouv_mls.model.*;
 import static org.alien4cloud.plugin.kubernetes.csar.Version.K8S_CSAR_VERSION;
 import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBE_NAMESPACE;
+import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBECONTAINER;
 
 import org.springframework.stereotype.Component;
 
@@ -290,6 +292,8 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                    if (serviceNodes == null) {
                       log.warn("Can not find services for " + retEntity.getAttributes().getName());
                    } else {
+                     NodeType nodeType = ToscaContext.get(NodeType.class, node.getType());;
+                     if (ToscaTypeUtils.isOfType (nodeType, K8S_TYPES_KUBECONTAINER)) {
                       /* update inputs for create operation */
                       Operation createOp = TopologyUtils.getCreateOperation(nodeTemplates.get(retEntity.getAttributes().getName()));
 
@@ -312,6 +316,10 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                             });
                          }
                       }
+                    } else {
+                      setNodePropertyPathValue(null, topology, node, "tokenid", new ScalarPropertyValue(retEntity.getAttributes().getTokenid()));
+                      setNodePropertyPathValue(null, topology, node, "passwordid", new ScalarPropertyValue(retEntity.getAttributes().getPwdid()));
+                    }
                    }
                 }
              }
