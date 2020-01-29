@@ -356,7 +356,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
           String url = configuration.getPdsIhmUrl() + appliName;
           log.info("Redirection URL: " + url);
           context.log().warn("Please use the following URL to continue : " + url);
-          context.log().error(new RedirectionTask(url));
+          context.log().error(new RedirectionTask(url, "urlRetour"));
        }
     }
 

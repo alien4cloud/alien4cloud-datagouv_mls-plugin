@@ -29,6 +29,6 @@ public class RedirectionModifier extends TopologyModifierSupport {
         // This warn will be used in legacy A4C UI
         context.log().warn("Please use the following URL to continue : " + url);
         // This error will stop the deployment flow and trigger an URL redirection in Wizard
-        context.log().error(new RedirectionTask(url));
+        context.log().error(new RedirectionTask(url, "urlRetour"));
     }
 }
