@@ -109,6 +109,7 @@ public class DatagouvMLSModuleImport implements ApplicationListener<AfterArchive
             Properties props = new Properties();
             props.put("bootstrap.servers", configuration.getKafkaServers());
             props.put("client.id", "A4C-datagouvMLS-plugin");
+            props.putAll(configuration.getProducerProperties());
 
             producer = new KafkaProducer<String, String>(props, new StringSerializer(), new StringSerializer());
         }
@@ -123,8 +124,12 @@ public class DatagouvMLSModuleImport implements ApplicationListener<AfterArchive
     }
 
     private void doPublish(String json) {
-        producer.send(new ProducerRecord<>(configuration.getTopic(),null,json));
-        log.debug("=> KAFKA[{}] : {}",configuration.getTopic(),json);
+        if (producer != null) {
+           producer.send(new ProducerRecord<>(configuration.getTopic(),null,json));
+           log.debug("=> KAFKA[{}] : {}",configuration.getTopic(),json);
+        } else {
+           log.warn("Can not publish to Kafka (Kafka server is not configured)");
+        }
     }
 
     private String getMetaprop (NodeType node, String prop) {

@@ -7,6 +7,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Getter
 @Setter
 @Component
@@ -16,6 +19,8 @@ public class DatagouvMLSConfiguration {
 
     private String kafkaServers;
     private String topic;
+
+    private Map<String,String> producerProperties = new HashMap<String,String>();
 
     private String moduleDeleteCredentials;
     private String moduleDeleteUrl;
