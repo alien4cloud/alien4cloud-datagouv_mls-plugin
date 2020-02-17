@@ -79,9 +79,9 @@ public class Ceph extends DataStore {
     }
 
     public String updateInput (String function, List<String> params, String user, String password) {
-       if (function.equals(ToscaFunctionConstants.GET_PROPERTY) && params.get(2).equals("http") && params.get(3).equals("access_key")) {
+       if (function.equals(ToscaFunctionConstants.GET_PROPERTY) && params.get(2).equals("http") && params.get(3).equals("username")) {
           return user;
-       } else if (function.equals(ToscaFunctionConstants.GET_PROPERTY) && params.get(2).equals("http") && params.get(3).equals("secret_key")) {
+       } else if (function.equals(ToscaFunctionConstants.GET_PROPERTY) && params.get(2).equals("http") && params.get(3).equals("password")) {
           return password;
        } else {
           return null;

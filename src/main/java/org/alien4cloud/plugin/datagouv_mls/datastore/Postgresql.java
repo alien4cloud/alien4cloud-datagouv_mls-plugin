@@ -111,7 +111,7 @@ public class Postgresql extends DataStore {
     }
 
     public String updateInput (String function, List<String> params, String user, String password) {
-       if (function.equals(ToscaFunctionConstants.GET_PROPERTY) && params.get(2).equals("postgresql_endpoint") && params.get(3).equals("user")) {
+       if (function.equals(ToscaFunctionConstants.GET_PROPERTY) && params.get(2).equals("postgresql_endpoint") && params.get(3).equals("username")) {
           return user;
        } else if (function.equals(ToscaFunctionConstants.GET_PROPERTY) && params.get(2).equals("postgresql_endpoint") && params.get(3).equals("password")) {
           return password;
