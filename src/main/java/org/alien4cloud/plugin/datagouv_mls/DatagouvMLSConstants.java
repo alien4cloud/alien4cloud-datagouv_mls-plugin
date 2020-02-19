@@ -37,5 +37,9 @@ public class DatagouvMLSConstants {
 
     }).collect(Collectors.toMap(data -> (String) data[0], data -> (Class) data[1]));
 
+    public static final String VAR_VALUES_PROPERTY = "var_values";
 
+    public static final String VAR_MAPPING_PROPERTY = "var_mapping";
+
+    public static final String RELATIONSHIP_TYPE_TO_EXPLORE = "org.alien4cloud.relationships.ConnectsToStaticEndpoint";
 }

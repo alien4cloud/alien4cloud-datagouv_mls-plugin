@@ -25,6 +25,7 @@ import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.RelationshipTemplate;
 import org.alien4cloud.tosca.model.templates.Topology;
 import org.alien4cloud.tosca.model.types.NodeType;
+import org.alien4cloud.tosca.utils.TopologyNavigationUtil;
 import org.alien4cloud.tosca.utils.ToscaTypeUtils;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConfiguration;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConstants;
@@ -35,6 +36,7 @@ import org.alien4cloud.plugin.datagouv_mls.model.*;
 import static org.alien4cloud.plugin.kubernetes.csar.Version.K8S_CSAR_VERSION;
 import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBE_NAMESPACE;
 import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBECONTAINER;
+import static alien4cloud.plugin.k8s.spark.jobs.modifier.SparkJobsModifier.K8S_TYPES_SPARK_JOBS;
 
 import org.springframework.stereotype.Component;
 
@@ -57,6 +59,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Component("datagouv_mls-modifier")
@@ -293,7 +296,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                       log.warn("Can not find services for " + retEntity.getAttributes().getName());
                    } else {
                      NodeType nodeType = ToscaContext.get(NodeType.class, node.getType());;
-                     if (ToscaTypeUtils.isOfType (nodeType, K8S_TYPES_KUBECONTAINER)) {
+                     if (ToscaTypeUtils.isOfType (nodeType, K8S_TYPES_KUBECONTAINER)) { 
                       /* update inputs for create operation */
                       Operation createOp = TopologyUtils.getCreateOperation(nodeTemplates.get(retEntity.getAttributes().getName()));
 
@@ -316,9 +319,15 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                             });
                          }
                       }
-                    } else {
+                    } else if (ToscaTypeUtils.isOfType (nodeType, K8S_TYPES_SPARK_JOBS)) { // spark jobs first generation
                       setNodePropertyPathValue(null, topology, node, "tokenid", new ScalarPropertyValue(retEntity.getAttributes().getTokenid()));
                       setNodePropertyPathValue(null, topology, node, "passwordid", new ScalarPropertyValue(retEntity.getAttributes().getPwdid()));
+                    } else { // spark jobs second generation
+                      AbstractPropertyValue varNamesPv = node.getProperties().get(DatagouvMLSConstants.VAR_VALUES_PROPERTY);
+                      if (varNamesPv != null && varNamesPv instanceof ComplexPropertyValue) {
+                         Map<String, Object> varValues = ((ComplexPropertyValue)varNamesPv).getValue();
+                         processNode(topology, node, varValues, retEntity.getAttributes());
+                      }
                     }
                    }
                 }
@@ -435,6 +444,33 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        }
 
        return null;
+    }
+
+    private void processNode(Topology topology, NodeTemplate clientNode, Map<String, Object> varValues, Attributes credential) {
+        // all relationship to datastores should use these credentials
+        Set<RelationshipTemplate> relationships = TopologyNavigationUtil.getRelationshipsFromType(clientNode, DatagouvMLSConstants.RELATIONSHIP_TYPE_TO_EXPLORE);
+        relationships.stream().forEach(relationshipTemplate -> {
+            log.info("Processing relationship {}", relationshipTemplate.getName());
+
+            NodeTemplate targetNode = topology.getNodeTemplates().get(relationshipTemplate.getTarget());
+            AbstractPropertyValue apv = relationshipTemplate.getProperties().get(DatagouvMLSConstants.VAR_MAPPING_PROPERTY);
+            if (apv != null && apv instanceof ComplexPropertyValue) {
+                Map<String, Object> mappingProperties = ((ComplexPropertyValue) apv).getValue();
+                processCredential(mappingProperties, "username", credential.getTokenid(), varValues);
+                processCredential(mappingProperties, "password", credential.getPwdid(), varValues);
+            }
+        });
+    }
+
+    private void processCredential(Map<String, Object> mappingProperties, String propertyName, String credentialValue, Map<String, Object> varValues) {
+        Object usernameObj = mappingProperties.get(propertyName);
+        if (usernameObj != null) {
+            String varNames = usernameObj.toString();
+            String[] varNamesArray = varNames.split(",");
+            for (String varName: varNamesArray) {
+                varValues.put(varName, new ScalarPropertyValue(credentialValue));
+            }
+        }
     }
 
 }
