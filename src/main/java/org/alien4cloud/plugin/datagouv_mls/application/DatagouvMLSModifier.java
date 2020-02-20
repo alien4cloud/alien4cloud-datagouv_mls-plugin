@@ -320,11 +320,24 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                          }
                       }
                     } else if (ToscaTypeUtils.isOfType (nodeType, K8S_TYPES_SPARK_JOBS)) { // spark jobs first generation
+                     if (log.isDebugEnabled()) {
+                         log.debug("Processing old fashion K8S spark Job");
+                     }
                       setNodePropertyPathValue(null, topology, node, "tokenid", new ScalarPropertyValue(retEntity.getAttributes().getTokenid()));
                       setNodePropertyPathValue(null, topology, node, "passwordid", new ScalarPropertyValue(retEntity.getAttributes().getPwdid()));
                     } else { // spark jobs second generation
+
+                         if (log.isDebugEnabled()) {
+                             log.debug("Processing new fashion K8S spark Job for node {}", node.getName());
+                         }
+
                       AbstractPropertyValue varNamesPv = node.getProperties().get(DatagouvMLSConstants.VAR_VALUES_PROPERTY);
                       if (varNamesPv != null && varNamesPv instanceof ComplexPropertyValue) {
+
+                          if (log.isDebugEnabled()) {
+                              log.debug("Found property {}", DatagouvMLSConstants.VAR_VALUES_PROPERTY);
+                          }
+
                          Map<String, Object> varValues = ((ComplexPropertyValue)varNamesPv).getValue();
                          processNode(topology, node, varValues, retEntity.getAttributes());
                       }
@@ -448,10 +461,19 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
     private void processNode(Topology topology, NodeTemplate clientNode, Map<String, Object> varValues, Attributes credential) {
         // all relationship to datastores should use these credentials
-        Set<RelationshipTemplate> relationships = TopologyNavigationUtil.getRelationshipsFromType(clientNode, DatagouvMLSConstants.RELATIONSHIP_TYPE_TO_EXPLORE);
-        relationships.stream().forEach(relationshipTemplate -> {
-            log.info("Processing relationship {}", relationshipTemplate.getName());
+        if (log.isDebugEnabled()) {
+            log.debug("Processing node {}, exploring relationships", clientNode.getName());
+        }
 
+        Set<RelationshipTemplate> relationships = TopologyNavigationUtil.getRelationshipsFromType(clientNode, DatagouvMLSConstants.RELATIONSHIP_TYPE_TO_EXPLORE);
+        if (log.isDebugEnabled()) {
+            log.debug("Found {} relationship of type {} for node {}", relationships.size(), DatagouvMLSConstants.RELATIONSHIP_TYPE_TO_EXPLORE, clientNode.getName());
+        }
+
+        relationships.stream().forEach(relationshipTemplate -> {
+            if (log.isDebugEnabled()) {
+                log.debug("Processing relationship {} for node {}", relationshipTemplate.getName(), clientNode.getName());
+            }
             NodeTemplate targetNode = topology.getNodeTemplates().get(relationshipTemplate.getTarget());
             AbstractPropertyValue apv = relationshipTemplate.getProperties().get(DatagouvMLSConstants.VAR_MAPPING_PROPERTY);
             if (apv != null && apv instanceof ComplexPropertyValue) {
