@@ -212,7 +212,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                             }
 
                             /* generate reference entities for this datastore */
-                            Map<String, Entity> dsEntities = ds.getEntities(relationships.get(nrel).getProperties(), serviceNode, startGuid, guid);
+                            Map<String, Entity> dsEntities = ds.getEntities(relationships.get(nrel).getProperties(), serviceNode, startGuid, guid, context);
                             guid -= (dsEntities.size() - nb);
 
                             referredEntities.putAll(dsEntities);

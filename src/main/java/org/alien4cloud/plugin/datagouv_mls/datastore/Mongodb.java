@@ -2,6 +2,7 @@ package org.alien4cloud.plugin.datagouv_mls.datastore;
 
 import static alien4cloud.utils.AlienUtils.safe;
 import alien4cloud.utils.PropertyUtil;
+import org.alien4cloud.alm.deployment.configuration.flow.FlowExecutionContext;
 import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ListPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
@@ -26,7 +27,7 @@ public class Mongodb extends DataStore {
       return "mongo_collection";
    }
 
-    public Map<String,Entity> getEntities (Map<String, AbstractPropertyValue> properties, NodeTemplate service, int startGuid, int curGuid) {
+    public Map<String,Entity> getEntities (Map<String, AbstractPropertyValue> properties, NodeTemplate service, int startGuid, int curGuid, FlowExecutionContext context) {
        Map<String,Entity> entities = new HashMap<String, Entity>();
 
        AbstractPropertyValue datasets = properties.get("datasets");
@@ -50,9 +51,14 @@ public class Mongodb extends DataStore {
           if (endpoint != null) {
              databasename = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("databasename"));
           }
+          if ((databasename == null) || databasename.trim().equals("")) {
+             log.warn ("No databasename set for " + service.getName());
+             context.log().error("No databasename set for " + service.getName());
+          }
 
           if (vals.size() == 0) {
              log.warn ("No datasets found for " + service.getName());
+             context.log().error ("No datasets found for " + service.getName());
           }
 
           /* process collections */
@@ -107,6 +113,7 @@ public class Mongodb extends DataStore {
 
        } else {
           log.warn ("No datasets found for " + service.getName());
+          context.log().error ("No datasets found for " + service.getName());
        }
 
        return entities;

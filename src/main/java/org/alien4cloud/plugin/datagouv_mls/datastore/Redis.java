@@ -2,6 +2,7 @@ package org.alien4cloud.plugin.datagouv_mls.datastore;
 
 import static alien4cloud.utils.AlienUtils.safe;
 import alien4cloud.utils.PropertyUtil;
+import org.alien4cloud.alm.deployment.configuration.flow.FlowExecutionContext;
 import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ListPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
@@ -26,7 +27,7 @@ public class Redis extends DataStore {
       return "redis_key";
    }
 
-    public Map<String,Entity> getEntities (Map<String, AbstractPropertyValue> properties, NodeTemplate service, int startGuid, int curGuid) {
+    public Map<String,Entity> getEntities (Map<String, AbstractPropertyValue> properties, NodeTemplate service, int startGuid, int curGuid, FlowExecutionContext context) {
        Map<String,Entity> entities = new HashMap<String, Entity>();
 
        AbstractPropertyValue datasets = properties.get("datasets");
@@ -45,6 +46,7 @@ public class Redis extends DataStore {
 
           if (vals.size() == 0) {
              log.warn ("No datasets found for " + service.getName());
+             context.log().error ("No datasets found for " + service.getName());
           }
 
           /* process keys */
@@ -82,6 +84,7 @@ public class Redis extends DataStore {
 
        } else {
           log.warn ("No datasets found for " + service.getName());
+          context.log().error ("No datasets found for " + service.getName());
        }
 
        return entities;

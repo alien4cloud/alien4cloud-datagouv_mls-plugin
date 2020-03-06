@@ -2,6 +2,7 @@ package org.alien4cloud.plugin.datagouv_mls.datastore;
 
 import static alien4cloud.utils.AlienUtils.safe;
 import alien4cloud.utils.PropertyUtil;
+import org.alien4cloud.alm.deployment.configuration.flow.FlowExecutionContext;
 import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ListPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
@@ -13,17 +14,20 @@ import org.alien4cloud.plugin.datagouv_mls.model.Attributes;
 import org.alien4cloud.plugin.datagouv_mls.model.Entity;
 import org.alien4cloud.plugin.datagouv_mls.model.elasticsearch.*;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class Elasticsearch extends DataStore {
 
    public String getTypeName() {
       return "elasticsearch_index";
    }
 
-    public Map<String,Entity> getEntities (Map<String, AbstractPropertyValue> properties, NodeTemplate service, int startGuid, int curGuid) {
+    public Map<String,Entity> getEntities (Map<String, AbstractPropertyValue> properties, NodeTemplate service, int startGuid, int curGuid, FlowExecutionContext context) {
        Map<String,Entity> entities = new HashMap<String, Entity>();
 
        /* set guids */
@@ -46,6 +50,12 @@ public class Elasticsearch extends DataStore {
        /* process index */
        String sindex = "";
        sindex = PropertyUtil.getScalarValue(safe(service.getProperties()).get("index_basename"));
+
+       if ((sindex == null) || sindex.trim().equals("")) {
+          log.warn ("No index_basename set for " + service.getName());
+          context.log().error("No index_basename set for " + service.getName());
+       }
+
        Entity index = new Entity();
        entities.put (String.valueOf(startGuid), index);
        index.setTypeName(getTypeName());

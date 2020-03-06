@@ -2,6 +2,7 @@ package org.alien4cloud.plugin.datagouv_mls.datastore;
 
 import static alien4cloud.utils.AlienUtils.safe;
 import alien4cloud.utils.PropertyUtil;
+import org.alien4cloud.alm.deployment.configuration.flow.FlowExecutionContext;
 import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ListPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
@@ -13,17 +14,20 @@ import org.alien4cloud.plugin.datagouv_mls.model.Attributes;
 import org.alien4cloud.plugin.datagouv_mls.model.Entity;
 import org.alien4cloud.plugin.datagouv_mls.model.kafka.*;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class Kafka extends DataStore {
 
    public String getTypeName() {
       return "kafka_topic";
    }
 
-    public Map<String,Entity> getEntities (Map<String, AbstractPropertyValue> properties, NodeTemplate service, int startGuid, int curGuid) {
+    public Map<String,Entity> getEntities (Map<String, AbstractPropertyValue> properties, NodeTemplate service, int startGuid, int curGuid, FlowExecutionContext context) {
        Map<String,Entity> entities = new HashMap<String, Entity>();
 
        /* get ip address from service attribute */
@@ -36,6 +40,12 @@ public class Kafka extends DataStore {
        /* process topic */
        String stopic = "";
        stopic = PropertyUtil.getScalarValue(safe(service.getProperties()).get("topic_name"));
+
+       if ((stopic == null) || stopic.trim().equals("")) {
+          log.warn ("No topic_name set for " + service.getName());
+          context.log().error("No topic_name set for " + service.getName());
+       }
+
        Entity topic = new Entity();
        entities.put (String.valueOf(startGuid), topic);
        topic.setTypeName(getTypeName());
