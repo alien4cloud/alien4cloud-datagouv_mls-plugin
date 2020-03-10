@@ -116,6 +116,26 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         } catch (NotFoundException e) {
         } // not deployed yet
 
+        Map<String, NodeTemplate> nodeTemplates = topology.getNodeTemplates();
+        Map<String, NodeTemplate> modules = new HashMap<String, NodeTemplate>();
+        safe(nodeTemplates).forEach ((nodeName, node) -> {
+            NodeType nodeType = ToscaContext.get(NodeType.class, node.getType());
+
+            String typeCompo = getMetaprop(nodeType, DatagouvMLSConstants.COMPONENT_TYPE);
+            if ((typeCompo != null) && typeCompo.equalsIgnoreCase("Module")) {
+               modules.put (nodeName, node);
+            }
+        });
+
+        String appliName = context.getEnvironmentContext().get().getApplication().getName() + "-" +
+                context.getEnvironmentContext().get().getEnvironment().getName();
+
+        if (modules.isEmpty()) {
+           log.info("No modules, nothing to do.");
+           dgvListener.storeExemptedAppli(appliName);
+           return;
+        }
+
         String now = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(new Date()).toString();
         guid = -1;
         String appliId = getGuid();
@@ -131,15 +151,13 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         /* first entity describes application */
         Entity appli = new Entity();
         appli.setTypeName(DatagouvMLSConstants.APPLI_NAME);
-        Attributes attribs = new Attributes();
-        attribs.setName(context.getEnvironmentContext().get().getApplication().getName());
-        String appliName = context.getEnvironmentContext().get().getApplication().getName() + "-" +
-                context.getEnvironmentContext().get().getEnvironment().getName();
-        attribs.setQualifiedName(appliName);
-        attribs.setVersion(appVersion);
-        attribs.setStartTime(now);
-        attribs.setStatus("PROPOSED");
-        appli.setAttributes(attribs);
+        Attributes aattribs = new Attributes();
+        aattribs.setName(context.getEnvironmentContext().get().getApplication().getName());
+        aattribs.setQualifiedName(appliName);
+        aattribs.setVersion(appVersion);
+        aattribs.setStartTime(now);
+        aattribs.setStatus("PROPOSED");
+        appli.setAttributes(aattribs);
         appli.setGuid(appliId);
 
         entities.add(appli);
@@ -149,12 +167,8 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         Map<String, DataStore> servicesToDs = new HashMap<String, DataStore>();
 
         /* process nodes */
-        Map<String, NodeTemplate> nodeTemplates = topology.getNodeTemplates();
-        for (String nodeName : nodeTemplates.keySet()) {
-            NodeType nodeType = ToscaContext.get(NodeType.class, nodeTemplates.get(nodeName).getType());
-
-            String typeCompo = getMetaprop(nodeType, DatagouvMLSConstants.COMPONENT_TYPE);
-            if ((typeCompo != null) && typeCompo.equalsIgnoreCase("Module")) {
+        modules.forEach ( (nodeName, node) -> {
+                NodeType nodeType = ToscaContext.get(NodeType.class, node.getType());
                 String version = nodeType.getArchiveVersion();
                 log.info("Processing node " + nodeName);
 
@@ -166,7 +180,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 /* module entity descriptor */
                 Entity module = new Entity();
                 module.setTypeName(DatagouvMLSConstants.MODULE_INSTANCE_NAME);
-                attribs = new Attributes();
+                Attributes attribs = new Attributes();
                 attribs.setName(nodeName);
                 attribs.setQualifiedName(nodeName + "-" + appliName);
                 attribs.setStartTime(now);
@@ -181,7 +195,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 attribs.setMemberOf(member);
 
                 /* parse relations to generate inputs & outputs (datastores) and datastores descriptors */
-                Map<String, RelationshipTemplate> relationships = nodeTemplates.get(nodeName).getRelationships();
+                Map<String, RelationshipTemplate> relationships = node.getRelationships();
                 List<Entity> inputs = new ArrayList<Entity>();
                 List<Entity> outputs = new ArrayList<Entity>();
                 for (String nrel : safe(relationships).keySet()) {
@@ -241,8 +255,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 refModule.setAttributes(attribs);
 
                 referredEntities.put(moduleGuid, refModule);
-            }
-        }
+        });
 
         boolean gotPds = false;
         try {

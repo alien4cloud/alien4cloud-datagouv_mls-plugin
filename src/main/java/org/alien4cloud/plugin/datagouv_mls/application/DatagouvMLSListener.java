@@ -72,11 +72,22 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
     private DatagouvMLSConfiguration configuration;
 
     private Map<String,Application> applis = new HashMap<String,Application>();
+    private List<String> exemptedApplis = new ArrayList<String>();
 
     public void storeAppli (String name, Application appli) {
        synchronized(this) {
           applis.put (name, appli);
        }
+    }
+
+    public void storeExemptedAppli (String name) {
+       synchronized(this) {
+          exemptedApplis.add (name);
+       }
+    }
+
+    private boolean isExempted(String appli) {
+       return exemptedApplis.contains(appli);
     }
 
     @PostConstruct
@@ -126,6 +137,10 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
        log.info ("Processing pre-deployment " + deployment.getId());
 
        ApplicationEnvironment env = environmentService.getOrFail(deployment.getEnvironmentId());
+       if (isExempted(deployment.getSourceName() + "-" + env.getName())) {
+          log.info ("application not processed by datagouv_mls plugin");
+          return;
+       }
 
        /* send request to getPds : a PDS has to be set */
        String errmsg = null;
@@ -173,6 +188,10 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
        log.info ("Processing post-deployment " + deployment.getId());
 
        ApplicationEnvironment env = environmentService.getOrFail(deployment.getEnvironmentId());
+       if (isExempted(deployment.getSourceName() + "-" + env.getName())) {
+          log.info ("application not processed by datagouv_mls plugin");
+          return;
+       }
 
        try {
           Application fullAppli = applis.get(deployment.getSourceName() + "-" + env.getName());
@@ -224,6 +243,12 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
        ApplicationEnvironment env = environmentService.getOrFail(deployment.getEnvironmentId());
        String appVersion = deployment.getVersionId();
        String appliName = deployment.getSourceName() + "-" + env.getName();
+       if (isExempted(appliName)) {
+          log.info ("application not processed by datagouv_mls plugin");
+          exemptedApplis.remove(appliName);
+          return;
+       }
+       applis.remove(appliName);
        
        String startTime = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(deployment.getStartDate()).toString();
        String endTime = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(deployment.getEndDate()).toString();
@@ -258,11 +283,13 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
        Map<String, NodeTemplate> nodeTemplates = topology.getNodeTemplates();
        /* list of nodes names */
        List<String> nodes = new ArrayList<String>();
+       boolean hasModule = false;
        for (String nodeName : nodeTemplates.keySet()) {
           NodeType nodeType = ToscaContext.get(NodeType.class, nodeTemplates.get(nodeName).getType());
           String typeCompo = getMetaprop(nodeType, DatagouvMLSConstants.COMPONENT_TYPE);
           if ((typeCompo!=null) && typeCompo.equalsIgnoreCase("Module")) {
              log.info ("Processing node " + nodeName);
+             hasModule = true;
              String version = nodeType.getArchiveVersion();
 
              String moduleGuid = getGuid();
@@ -303,6 +330,11 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
           }
        }
        ToscaContext.destroy();
+
+       if (!hasModule) {
+          log.info("No modules, nothing to do.");
+          return;
+       }
 
        try {
           /* post JSON to update appli */
