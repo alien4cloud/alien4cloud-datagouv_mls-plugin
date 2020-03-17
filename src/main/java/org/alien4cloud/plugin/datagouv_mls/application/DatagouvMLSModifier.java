@@ -444,7 +444,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         labels.put("ns-pf-role", new ScalarPropertyValue("cas-usage"));
         labels.put("ns-clef-namespace", new ScalarPropertyValue(namespace));
         Map<String, Object> annotations = new HashMap<String, Object>();
-        annotations.put("scheduler.alpha.kubernetes.io/node-selector", new ScalarPropertyValue("ns-zone-de-sensibilite=" + level.toLowerCase()));
+        annotations.put("scheduler.alpha.kubernetes.io/node-selector", new ScalarPropertyValue("zone-de-sensibilite=" + level.toLowerCase()));
         metadata.put("annotations", annotations);
         metadata.put("labels", labels);
         setNodePropertyPathValue(null, topology, kubeNSNode, "metadata", new ComplexPropertyValue(metadata));
