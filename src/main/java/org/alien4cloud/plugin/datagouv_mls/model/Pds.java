@@ -1,7 +1,6 @@
 package org.alien4cloud.plugin.datagouv_mls.model;
 
 import java.util.List;
-import java.util.Map;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -16,4 +15,6 @@ public class Pds {
    String zone;
    String erreur;
    String localizedMessage;
+
+   List<Module> modules;
 }

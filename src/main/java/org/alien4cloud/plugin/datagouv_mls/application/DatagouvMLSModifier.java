@@ -312,7 +312,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                             log.warn("Can not find services for " + retEntity.getAttributes().getName());
                         } else {
                             NodeType nodeType = ToscaContext.get(NodeType.class, node.getType());
-                            ;
+
                             if (ToscaTypeUtils.isOfType(nodeType, K8S_TYPES_KUBECONTAINER)) {
                                 /* update inputs for create operation */
                                 Operation createOp = TopologyUtils.getCreateOperation(nodeTemplates.get(retEntity.getAttributes().getName()));
@@ -384,7 +384,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 } else if ((pds.getZone() == null) || pds.getZone().trim().equals("")) {
                     log.error("DataGouv GetPds response contains no zone!");
                 } else {
-                    processPds(topology, context, pds.getZone());
+                    processPds(topology, context, pds, pds.getZone(), appliName);
                     gotPds = true;
                 }
             }
@@ -401,7 +401,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         }
     }
 
-    private void processPds(Topology topology, FlowExecutionContext context, String level) {
+    private void processPds(Topology topology, FlowExecutionContext context, Pds pds, String level, String appli) {
 
         if (!TopologyUtils.isK8S(topology)) {
             return;
@@ -448,6 +448,67 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         metadata.put("annotations", annotations);
         metadata.put("labels", labels);
         setNodePropertyPathValue(null, topology, kubeNSNode, "metadata", new ComplexPropertyValue(metadata));
+
+        /* process modules if any */
+        if ((pds.getModules() == null) || (pds.getModules().size() == 0)) {
+           return;
+        }
+        for (Module module : pds.getModules()) {
+           if (module.getName() == null) {
+              log.error ("Module has no name: " + module.toString());
+           } else {
+              String nodeName = module.getName();
+              log.debug ("Processing PDS for node " + nodeName);
+              NodeTemplate node = topology.getNodeTemplates().get(nodeName);
+              if (node != null) {
+                 if (module.getPdsModuleInstancie() != null) {
+                    try {
+                       setNodePropertyPathValue(null, topology, node, "pdsModuleInstancie", new ScalarPropertyValue(module.getPdsModuleInstancie()));
+                    } catch (Exception e) {
+                       log.debug ("Can not set pdsModuleInstancie for " + nodeName + " (" + e.getMessage() + ")");
+                    }
+                 }
+                 if (module.getPdsEcritureModuleInstancie() != null) {
+                    try {
+                       setNodePropertyPathValue(null, topology, node, "pdsEcritureModuleInstancie", new ScalarPropertyValue(module.getPdsEcritureModuleInstancie()));
+                    } catch (Exception e) {
+                       log.debug ("Can not set pdsEcritureModuleInstancie for " + nodeName + " (" + e.getMessage() + ")");
+                    }
+                 }
+                 if (module.getPdsModuleImporte() != null) {
+                    try {
+                       setNodePropertyPathValue(null, topology, node, "pdsModuleImporte", new ScalarPropertyValue(module.getPdsModuleImporte()));
+                    } catch (Exception e) {
+                       log.debug ("Can not set pdsModuleImporte for " + nodeName + " (" + e.getMessage() + ")");
+                    }
+                 }
+                 if (module.getPdsModuleInstancieNum() != null) {
+                    try {
+                       setNodePropertyPathValue(null, topology, node, "pdsModuleInstancieNum", new ScalarPropertyValue(module.getPdsModuleInstancieNum().toString()));
+                    } catch (Exception e) {
+                       log.debug ("Can not set pdsModuleInstancieNum for " + nodeName + " (" + e.getMessage() + ")");
+                    }
+                 }
+                 if (module.getPdsEcritureModuleInstancieNum() != null) {
+                    try {
+                       setNodePropertyPathValue(null, topology, node, "pdsEcritureModuleInstancieNum", new ScalarPropertyValue(module.getPdsEcritureModuleInstancieNum().toString()));
+                    } catch (Exception e) {
+                       log.debug ("Can not set pdsEcritureModuleInstancieNum for " + nodeName + " (" + e.getMessage() + ")");
+                    }
+                 }
+                 if (module.getPdsModuleImporteNum() != null) {
+                    try {
+                       setNodePropertyPathValue(null, topology, node, "pdsModuleImporteNum", new ScalarPropertyValue(module.getPdsModuleImporteNum().toString()));
+                    } catch (Exception e) {
+                       log.debug ("Can not set pdsModuleImporteNum for " + nodeName + " (" + e.getMessage() + ")");
+                    }
+                 }
+
+              } else {
+                 log.error("Cannot find module " + module.getName());
+              }
+           }
+        }
 
     }
 
