@@ -90,7 +90,14 @@ public class DatagouvMLSModuleImport implements ApplicationListener<AfterArchive
                 }
 
                 if (!entities.isEmpty()) {
-                   String json = (new ObjectMapper()).writeValueAsString(entities);
+                   ModuleImport data = new ModuleImport();
+                   Message message = new Message();
+                   message.setEntities(entities);
+                   message.setType("ENTITY_CREATE");
+                   data.setVersion(new Version());
+                   data.setMessage(message);
+
+                   String json = (new ObjectMapper()).writeValueAsString(data);
                    doPublish(json);
                 }
              }
