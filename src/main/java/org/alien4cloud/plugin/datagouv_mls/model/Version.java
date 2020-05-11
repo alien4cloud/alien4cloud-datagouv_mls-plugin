@@ -8,5 +8,5 @@ import lombok.Setter;
 
 public class Version {
 
-   String version = "2.0.0";
+   String version = "1.0.0";
 }
