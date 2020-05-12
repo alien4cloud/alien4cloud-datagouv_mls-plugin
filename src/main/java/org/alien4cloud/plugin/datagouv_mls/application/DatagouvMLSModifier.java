@@ -379,9 +379,9 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 log.debug("GET PDS RESPONSE=" + output.toString());
                 Pds pds = (new ObjectMapper()).readValue(output.toString(), Pds.class);
 
-                if ((pds.getErreur() != null) && !pds.getErreur().trim().equals("")) {
-                    log.error("DataGouv GetPds error: " + pds.getErreur());
-                } else if ((pds.getZone() == null) || pds.getZone().trim().equals("")) {
+                if (isSet(pds.getErreurZone())) {
+                    log.error("DataGouv GetPds error: " + pds.getErreurZone());
+                } else if (!isSet(pds.getZone())) {
                     log.error("DataGouv GetPds response contains no zone!");
                 } else {
                     processPds(topology, context, pds, pds.getZone(), appliName);
@@ -461,21 +461,21 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
               log.debug ("Processing PDS for node " + nodeName);
               NodeTemplate node = topology.getNodeTemplates().get(nodeName);
               if (node != null) {
-                 if (module.getPdsModuleInstancie() != null) {
+                 if (isSet(module.getPdsModuleInstancie())) {
                     try {
                        setNodePropertyPathValue(null, topology, node, "pdsModuleInstancie", new ScalarPropertyValue(module.getPdsModuleInstancie()));
                     } catch (Exception e) {
                        log.debug ("Can not set pdsModuleInstancie for " + nodeName + " (" + e.getMessage() + ")");
                     }
                  }
-                 if (module.getPdsEcritureModuleInstancie() != null) {
+                 if (isSet(module.getPdsEcritureModuleInstancie())) {
                     try {
                        setNodePropertyPathValue(null, topology, node, "pdsEcritureModuleInstancie", new ScalarPropertyValue(module.getPdsEcritureModuleInstancie()));
                     } catch (Exception e) {
                        log.debug ("Can not set pdsEcritureModuleInstancie for " + nodeName + " (" + e.getMessage() + ")");
                     }
                  }
-                 if (module.getPdsModuleImporte() != null) {
+                 if (isSet(module.getPdsModuleImporte())) {
                     try {
                        setNodePropertyPathValue(null, topology, node, "pdsModuleImporte", new ScalarPropertyValue(module.getPdsModuleImporte()));
                     } catch (Exception e) {
@@ -565,6 +565,10 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 varValues.put(varName, new ScalarPropertyValue(credentialValue));
             }
         }
+    }
+
+    private boolean isSet(String val) {
+       return (val != null) && !val.trim().equals("");
     }
 
 }

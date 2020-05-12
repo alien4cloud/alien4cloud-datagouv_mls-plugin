@@ -13,8 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Pds {
    String zone;
-   String erreur;
-   String localizedMessage;
+   String erreurZone;
 
    List<Module> modules;
 }

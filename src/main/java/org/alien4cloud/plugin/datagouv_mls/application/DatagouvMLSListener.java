@@ -163,17 +163,12 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
              log.debug ("GET PDS RESPONSE=" + output.toString());
              Pds pds = (new ObjectMapper()).readValue(output.toString(), Pds.class);
 
-             if ((pds.getErreur() != null) && !pds.getErreur().trim().equals("")) { 
-                log.error ("DataGouv GetPds error: " + pds.getErreur());
-                errmsg = pds.getErreur();
+             if ((pds.getErreurZone() != null) && !pds.getErreurZone().trim().equals("")) { 
+                log.error ("DataGouv GetPds error: " + pds.getErreurZone());
+                errmsg = pds.getErreurZone();
             } else if ((pds.getZone() == null) || pds.getZone().trim().equals("")) {
-                if ((pds.getLocalizedMessage() != null) && !pds.getLocalizedMessage().trim().equals("")) { 
-                   log.error ("DataGouv GetPds error: " + pds.getLocalizedMessage());
-                   errmsg = pds.getLocalizedMessage();
-                } else {
-                   log.error ("DataGouv GetPds response contains no zone!");
-                   errmsg = "GetPds response contains no zone!";
-                }
+                log.error ("DataGouv GetPds response contains no zone!");
+                errmsg = "GetPds response contains no zone!";
             }
           }
        } catch (Exception e) {
