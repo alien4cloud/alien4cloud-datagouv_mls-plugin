@@ -8,8 +8,6 @@ import lombok.Setter;
 @Getter
 @Setter
 
-public class Message {
-   Entities entities;
-   String user = "a4c";
-   String type;
+public class Entities {
+   List<Entity> entities;
 }

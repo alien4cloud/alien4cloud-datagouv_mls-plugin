@@ -92,8 +92,10 @@ public class DatagouvMLSModuleImport implements ApplicationListener<AfterArchive
                 if (!entities.isEmpty()) {
                    ModuleImport data = new ModuleImport();
                    Message message = new Message();
-                   message.setEntities(entities);
-                   message.setType("ENTITY_CREATE");
+                   Entities entitiesList = new Entities();
+                   entitiesList.setEntities(entities);
+                   message.setEntities(entitiesList);
+                   message.setType("ENTITY_CREATE_V2");
                    data.setVersion(new Version());
                    data.setMessage(message);
 
