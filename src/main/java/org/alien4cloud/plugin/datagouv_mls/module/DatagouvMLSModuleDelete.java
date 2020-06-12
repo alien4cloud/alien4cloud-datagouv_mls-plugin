@@ -36,6 +36,7 @@ public class DatagouvMLSModuleDelete implements ApplicationListener<BeforeArchiv
     @Override
     public void onApplicationEvent(BeforeArchiveDeleted event) {
        try {
+         log.info ("Processing " + event.getArchiveId());
          int pos = event.getArchiveId().indexOf(":");
          String archiveName = event.getArchiveId().substring(0,pos);
          String archiveVersion = event.getArchiveId().substring(pos+1);
@@ -52,28 +53,24 @@ public class DatagouvMLSModuleDelete implements ApplicationListener<BeforeArchiv
                NodeType node = nodeTypes.get(nodename);
                String typeCompo = getMetaprop(node, DatagouvMLSConstants.COMPONENT_TYPE);
                if ((typeCompo != null) && typeCompo.equalsIgnoreCase("Module")) {
-                  keepIt = true;
+                  log.info ("Processing node " + node.getElementId());
+                  String[] commands = new String[7];
+                  commands[0] = "curl";
+                  commands[1] = "-k";
+                  commands[2] = "-X";
+                  commands[3] = "DELETE";
+                  commands[4] = "-u";
+                  commands[5] = configuration.getModuleDeleteCredentials();
+                  commands[6] = configuration.getModuleDeleteUrl() + node.getElementId();
+                  StringBuffer output = new StringBuffer();
+                  StringBuffer error = new StringBuffer();
+
+                  int ret = ProcessLauncher.launch(commands, output, error);
+
+                  if (ret != 0) {
+                     log.error ("Error " + ret +"[" + error.toString() + "]");
+                  }
                }
-            }
-
-            if (keepIt) {
-                log.info ("Processing " + archiveName);
-                String[] commands = new String[7];
-                commands[0] = "curl";
-                commands[1] = "-k";
-                commands[2] = "-X";
-                commands[3] = "DELETE";
-                commands[4] = "-u";
-                commands[5] = configuration.getModuleDeleteCredentials();
-                commands[6] = configuration.getModuleDeleteUrl() + archiveName;
-                StringBuffer output = new StringBuffer();
-                StringBuffer error = new StringBuffer();
-
-                int ret = ProcessLauncher.launch(commands, output, error);
-
-                if (ret != 0) {
-                   log.error ("Error " + ret +"[" + error.toString() + "]");
-                }
             }
          }
 
