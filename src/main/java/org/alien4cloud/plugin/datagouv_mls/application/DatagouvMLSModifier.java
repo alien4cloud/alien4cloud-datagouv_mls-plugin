@@ -23,6 +23,7 @@ import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ComplexPropertyValue;
 import org.alien4cloud.tosca.model.definitions.Operation;
 import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
+import org.alien4cloud.tosca.model.templates.Capability;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.RelationshipTemplate;
 import org.alien4cloud.tosca.model.templates.Topology;
@@ -39,6 +40,7 @@ import org.alien4cloud.plugin.datagouv_mls.model.*;
 import static org.alien4cloud.plugin.kubernetes.csar.Version.K8S_CSAR_VERSION;
 import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBE_NAMESPACE;
 import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBECONTAINER;
+import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBE_SERVICE;
 import static alien4cloud.plugin.k8s.spark.jobs.modifier.SparkJobsModifier.K8S_TYPES_SPARK_JOBS;
 
 import org.springframework.stereotype.Component;
@@ -54,6 +56,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -127,14 +130,45 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
             }
         });
 
-        String appliName = context.getEnvironmentContext().get().getApplication().getName() + "-" +
-                context.getEnvironmentContext().get().getEnvironment().getName();
+        /* get "Cas d'usage" from meta property */
+        String cuname = null;
+        String cuNameMetaPropertyKey = this.metaPropertiesService.getMetapropertykeyByName(CUNAME_PROP, MetaPropertyTarget.APPLICATION);
+
+        if (cuNameMetaPropertyKey != null) {
+            Optional<EnvironmentContext> ec = context.getEnvironmentContext();
+            if (ec.isPresent() && cuNameMetaPropertyKey != null) {
+                EnvironmentContext env = ec.get();
+                Map<String, String> metaProperties = safe(env.getApplication().getMetaProperties());
+                String sCuname = metaProperties.get(cuNameMetaPropertyKey);
+                if ((sCuname != null) && !sCuname.equals("")) {
+                    cuname = sCuname;
+                }
+            }
+        }
+        if (cuname == null) {
+            log.warn("Can not find " + CUNAME_PROP);
+            cuname = "default";
+        }
+
+        String appliName = "L_ACU_" + context.getEnvironmentContext().get().getEnvironment().getEnvironmentType() + "-" + 
+                           context.getEnvironmentContext().get().getEnvironment().getName() + "-" +
+                           cuname + "-" + context.getEnvironmentContext().get().getApplication().getId();
 
         if (modules.isEmpty()) {
            log.info("No modules, nothing to do.");
            dgvListener.storeExemptedAppli(appliName);
            return;
         }
+
+        Tag apqnTag = new Tag();
+        apqnTag.setName(DatagouvMLSConstants.QN_TAGNAME);
+        apqnTag.setValue(appliName);
+        List<Tag> aptags = topology.getTags();
+        if (aptags == null) {
+          aptags = new ArrayList<Tag>();
+        }
+        aptags.add(apqnTag);
+        topology.setTags(aptags);
 
         String now = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(new Date()).toString();
         guid = -1;
@@ -172,6 +206,16 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 String version = nodeType.getArchiveVersion();
                 log.info("Processing node " + nodeName);
 
+                Tag qnTag = new Tag();
+                qnTag.setName(DatagouvMLSConstants.QN_TAGNAME);
+                qnTag.setValue(appliName + "-" + nodeName);
+                List<Tag> tags = node.getTags();
+                if (tags == null) {
+                    tags = new ArrayList<Tag>();
+                }
+                tags.add(qnTag);
+                node.setTags(tags);
+
                 List<NodeTemplate> serviceNodes = new ArrayList<NodeTemplate>();
                 nodesToServices.put(nodeName, serviceNodes);
 
@@ -182,7 +226,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 module.setTypeName(DatagouvMLSConstants.MODULE_INSTANCE_NAME);
                 Attributes attribs = new Attributes();
                 attribs.setName(nodeName);
-                attribs.setQualifiedName(nodeName + "-" + appliName);
+                attribs.setQualifiedName(appliName + "-" + nodeName);
                 attribs.setStartTime(now);
                 attribs.setVersion(appVersion);
                 Entity instance = new Entity();
@@ -432,7 +476,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
         /* generate namespace name */
         String namespace = ("cu-p-" + context.getEnvironmentContext().get().getEnvironment().getName() + "-" + cuname +
-                "--" + context.getEnvironmentContext().get().getApplication().getName()).toLowerCase();
+                "--" + context.getEnvironmentContext().get().getApplication().getName()).toLowerCase() + "-" + level;
         setNodePropertyPathValue(null, topology, kubeNSNode, "namespace", new ScalarPropertyValue(namespace));
         setNodePropertyPathValue(null, topology, kubeNSNode, "apiVersion", new ScalarPropertyValue("v1"));
 
@@ -448,6 +492,17 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         metadata.put("annotations", annotations);
         metadata.put("labels", labels);
         setNodePropertyPathValue(null, topology, kubeNSNode, "metadata", new ComplexPropertyValue(metadata));
+
+        /* set base url on services */
+        Set<NodeTemplate> kubeNodes = TopologyNavigationUtil.getNodesOfType(topology, K8S_TYPES_KUBE_SERVICE, true);
+        String baseUrl = MessageFormat.format(configuration.getProxyBaseUrl(), level);
+        for (NodeTemplate serviceNode : safe(kubeNodes)) {
+           Capability endpoint = safe(serviceNode.getCapabilities()).get("service_endpoint");
+           String proxiedStr = PropertyUtil.getScalarPropertyValueFromPath(endpoint.getProperties(), "proxied");
+           if (proxiedStr.equals("true")) {         
+              endpoint.getProperties().put("base_url", new ScalarPropertyValue(baseUrl));
+           }
+        }
 
         /* process modules if any */
         if ((pds.getModules() == null) || (pds.getModules().size() == 0)) {

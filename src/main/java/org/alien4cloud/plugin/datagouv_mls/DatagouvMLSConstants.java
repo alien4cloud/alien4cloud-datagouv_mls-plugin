@@ -22,6 +22,8 @@ public class DatagouvMLSConstants {
 
     public static final String TOKEN_TAGNAME = "MLS_tokenid";
 
+    public static final String QN_TAGNAME = "qualifiedName";
+
     // known datastores
     public static Map<String, Class> dataStoreTypes = Stream.of(new Object[][] { 
         { "artemis.redis.pub.capabilities.Redis", Redis.class }, 
