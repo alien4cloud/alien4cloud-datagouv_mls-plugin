@@ -156,7 +156,8 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
         if (modules.isEmpty()) {
            log.info("No modules, nothing to do.");
-           dgvListener.storeExemptedAppli(appliName);
+           dgvListener.storeExemptedAppli(context.getEnvironmentContext().get().getApplication().getName() + "-" + 
+                                          context.getEnvironmentContext().get().getEnvironment().getName());
            return;
         }
 
@@ -404,7 +405,8 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
             context.getExecutionCache().put(FlowExecutionContext.INITIAL_TOPOLOGY, CloneUtil.clone(topology));
 
             /* store application description to be used by DataGouvMLSListener on validatation phase */
-            dgvListener.storeAppli(appliName, fullAppli);
+            dgvListener.storeAppli(context.getEnvironmentContext().get().getApplication().getName() + "-" + 
+                                   context.getEnvironmentContext().get().getEnvironment().getName(), fullAppli);
 
             /* send request to getPds */
             commands = new String[5];
@@ -477,7 +479,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         /* generate namespace name */
         String namespace = ("cu-p-" + context.getEnvironmentContext().get().getEnvironment().getName() + "-" + cuname +
                 "--" + context.getEnvironmentContext().get().getApplication().getName()).toLowerCase() + "-" + level;
-        setNodePropertyPathValue(null, topology, kubeNSNode, "namespace", new ScalarPropertyValue(namespace));
+        setNodePropertyPathValue(null, topology, kubeNSNode, "namespace", new ScalarPropertyValue(namespace.toLowerCase().replaceAll("_","-")));
         setNodePropertyPathValue(null, topology, kubeNSNode, "apiVersion", new ScalarPropertyValue("v1"));
 
         /* build metadata with annotation for env from PDS level */
@@ -499,7 +501,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         for (NodeTemplate serviceNode : safe(kubeNodes)) {
            Capability endpoint = safe(serviceNode.getCapabilities()).get("service_endpoint");
            String proxiedStr = PropertyUtil.getScalarPropertyValueFromPath(endpoint.getProperties(), "proxied");
-           if (proxiedStr.equals("true")) {         
+           if ((proxiedStr != null) && proxiedStr.equals("true")) {         
               endpoint.getProperties().put("base_url", new ScalarPropertyValue(baseUrl));
            }
         }

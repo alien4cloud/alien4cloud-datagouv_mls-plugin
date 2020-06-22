@@ -2,6 +2,7 @@ package org.alien4cloud.plugin.datagouv_mls.application;
 
 import alien4cloud.application.ApplicationEnvironmentService;
 import alien4cloud.common.MetaPropertiesService;
+import alien4cloud.model.common.Tag;
 import alien4cloud.deployment.DeploymentRuntimeStateService;
 import alien4cloud.deployment.DeploymentService;
 import alien4cloud.events.DeploymentCreatedEvent;
@@ -145,13 +146,16 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
        /* send request to getPds : a PDS has to be set */
        String errmsg = null;
        try {
+          Application fullAppli = applis.get(deployment.getSourceName() + "-" + env.getName());
+          String qname = fullAppli.getEntities().get(0).getAttributes().getQualifiedName();
+
           String[] commands = new String[6];
           commands = new String[5];
           commands[0] = "curl";
           commands[1] = "-k";
           commands[2] = "-u";
           commands[3] = configuration.getGetPdsCredentials();
-          commands[4] = configuration.getGetPdsUrl() + URLEncoder.encode(deployment.getSourceName() + "-" + env.getName(), StandardCharsets.UTF_8.toString());
+          commands[4] = configuration.getGetPdsUrl() + URLEncoder.encode(qname, StandardCharsets.UTF_8.toString());
           StringBuffer output = new StringBuffer();
           StringBuffer error = new StringBuffer();
 
@@ -244,6 +248,18 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
           return;
        }
        applis.remove(appliName);
+
+       Topology topology = deploymentRuntimeStateService.getUnprocessedTopology(deployment.getId());
+       String appQualifiedName = null;
+       List<Tag> topoTags = topology.getTags();
+       for (Tag tag: safe(topoTags)) {
+          if (tag.getName().equals("qualifiedName")) {
+             appQualifiedName = tag.getValue();
+          }
+       }
+       if (appQualifiedName == null) {
+          log.warn ("Cannot find app qualified name");
+       }
        
        String startTime = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(deployment.getStartDate()).toString();
        String endTime = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(deployment.getEndDate()).toString();
@@ -263,7 +279,7 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
        appli.setGuid (appliId);
        Attributes attribs = new Attributes();
        attribs.setName(deployment.getSourceName());
-       attribs.setQualifiedName(appliName);
+       attribs.setQualifiedName(appQualifiedName);
        attribs.setVersion(appVersion);
        attribs.setStartTime(startTime);
        attribs.setEndTime(endTime);
@@ -272,7 +288,6 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
 
        entities.add(appli);
 
-       Topology topology = deploymentRuntimeStateService.getUnprocessedTopology(deployment.getId());
        ToscaContext.init(topology.getDependencies());
        /* process nodes */
        Map<String, NodeTemplate> nodeTemplates = topology.getNodeTemplates();
@@ -294,7 +309,7 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
              module.setTypeName(DatagouvMLSConstants.MODULE_INSTANCE_NAME);
              attribs = new Attributes();
              attribs.setName(nodeName);
-             attribs.setQualifiedName(nodeName + "-" + appliName);
+             attribs.setQualifiedName(appQualifiedName + "-" + nodeName);
              nodes.add(nodeName + "-" + appliName);
              attribs.setStartTime(startTime);
              attribs.setEndTime(endTime);
@@ -369,9 +384,11 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
           commands[3] = "DELETE";
           commands[4] = "-u";
           commands[5] = configuration.getApplicationDeleteCredentials();
-          commands[6] = configuration.getApplicationDeleteAppliUrl() + URLEncoder.encode(appliName, StandardCharsets.UTF_8.toString());
+          commands[6] = configuration.getApplicationDeleteAppliUrl() + URLEncoder.encode(appQualifiedName, StandardCharsets.UTF_8.toString());
           output = new StringBuffer();
           error = new StringBuffer();
+
+          log.debug("APPLI DEL URL=" + configuration.getApplicationDeleteAppliUrl() + URLEncoder.encode(appQualifiedName, StandardCharsets.UTF_8.toString()));
 
           ret = ProcessLauncher.launch(commands, output, error);
           if (ret != 0) {
@@ -395,6 +412,10 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
                                            StandardCharsets.UTF_8.toString());
                 output = new StringBuffer();
                 error = new StringBuffer();
+
+                log.debug ("MODULE DEL URL=" + configuration.getApplicationDeleteModuleUrl() + 
+                                           URLEncoder.encode(entity.getAttributes().getQualifiedName(), 
+                                           StandardCharsets.UTF_8.toString()));
 
                 ret = ProcessLauncher.launch(commands, output, error);
                 if (ret != 0) {
