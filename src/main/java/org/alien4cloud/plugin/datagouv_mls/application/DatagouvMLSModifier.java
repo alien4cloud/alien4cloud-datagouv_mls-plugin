@@ -152,7 +152,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
         String appliName = "L_ACU_" + context.getEnvironmentContext().get().getEnvironment().getEnvironmentType() + "-" + 
                            context.getEnvironmentContext().get().getEnvironment().getName() + "-" +
-                           cuname + "-" + context.getEnvironmentContext().get().getApplication().getId();
+                           cuname + "--" + context.getEnvironmentContext().get().getApplication().getId();
 
         if (modules.isEmpty()) {
            log.info("No modules, nothing to do.");
