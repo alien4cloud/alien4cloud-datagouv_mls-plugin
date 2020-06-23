@@ -25,3 +25,7 @@ component_descriptors:
     name: Datagouv-MLS / Redirection sample
     description: >
       Modifier to experiment redirection (randomly google search for a number)
+  - bean_name: metapropscheck-modifier
+    name: Datagouv-MLS / Meta Properties checker
+    description: >
+      Modifier to check that application mandatory metaproperties are set
