@@ -173,6 +173,10 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
             } else if ((pds.getZone() == null) || pds.getZone().trim().equals("")) {
                 log.error ("DataGouv GetPds response contains no zone!");
                 errmsg = "GetPds response contains no zone!";
+                if (pds.getMessage() != null) {
+                   log.error("DataGouv GetPds error: " + pds.getMessage() + " [" + pds.getCode() + "]");
+                   errmsg = pds.getMessage();
+                }
             }
           }
        } catch (Exception e) {
@@ -221,7 +225,16 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
              log.error ("Error " + ret +"[" + error.toString() + "]");
           } else {
              log.debug ("POST RESPONSE=" + output.toString());
+             Application retAppli = (new ObjectMapper()).readValue(output.toString(), Application.class);
+
+             if ((retAppli.getEntities() == null) || (retAppli.getEntities().size() == 0)) {
+                 log.error("DataGouv response contains no entity !");
+                 if (retAppli.getMessage() != null) {
+                    log.error("Error while updating application: " + retAppli.getMessage() + " [" + retAppli.getCode() + "]");
+                 }
+             }
           }
+
        } catch (Exception e) {
           log.error ("Got exception:", e);
        }
@@ -374,6 +387,14 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
              log.error ("Error " + ret +"[" + error.toString() + "]");
           } else {
              log.debug ("POST RESPONSE=" + output.toString());
+             Application retAppli = (new ObjectMapper()).readValue(output.toString(), Application.class);
+   
+             if ((retAppli.getEntities() == null) || (retAppli.getEntities().size() == 0)) {
+                 log.error("DataGouv response contains no entity !");
+                 if (retAppli.getMessage() != null) {
+                    log.error("Error while updating application: " + retAppli.getMessage());
+                 }
+             }
           }
 
           /* send request to delete appli */
@@ -395,6 +416,9 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
              log.error ("Error " + ret +"[" + error.toString() + "]");
           } else {
              log.debug ("APPLI DEL RESPONSE=" + output.toString());
+          }
+          if (output.length() == 0) {
+              log.error("Can not delete application from Atlas");
           }
 
           /* send requests to delete modules */
@@ -422,6 +446,9 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
                    log.error ("Error " + ret +"[" + error.toString() + "]");
                 } else {
                    log.debug ("MODULE DEL RESPONSE=" + output.toString());
+                   if (output.length() == 0) {
+                      log.error("Can not delete module from Atlas");
+                   }
                 }
              }
           }

@@ -20,4 +20,7 @@ public class Application {
 
    Map<String,Entity> referredEntities;
 
+   /* response fields in case of error */
+   String code;
+   String message;
 }

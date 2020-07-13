@@ -16,4 +16,8 @@ public class Pds {
    String erreurZone;
 
    List<Module> modules;
+
+   /* response fields in case of error */
+   String code;
+   String message;
 }
