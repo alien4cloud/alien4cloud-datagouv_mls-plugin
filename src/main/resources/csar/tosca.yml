@@ -52,6 +52,14 @@ node_types:
         type: string
         description: |
           ZD, the base URL for the portail (ex. https://portail.metier.artemis).
+      replicaCount:
+        type: integer
+        description:
+          PD, number of replicas for the RP pod(s).
+      locationOptions:
+        type: string
+        description: |
+          UD, options to add to location config.
       serviceUpstreamUrl:
         type: string
         description: |
@@ -60,10 +68,10 @@ node_types:
         type: string
         description: |
           ZD, the base URL of the proxy (ex. https://proxy.metier.artemis). Combined to the contextPath will give the full external URL to access the target.
-      proxyBaseRedirectRegexp:
-        type: string
-        description: |
-          ZD, expression used to detect proxy redirect (ex. ^https://[^.]+\.metier\.artemis(:[0-9]+)?/(.*)). Used in Nginx configuration proxy_redirect directive.
+#      proxyBaseRedirectRegexp:
+#        type: string
+#        description: |
+#          ZD, expression used to detect proxy redirect (ex. ^https://[^.]+\.metier\.artemis(:[0-9]+)?/(.*)). Used in Nginx configuration proxy_redirect directive.
       dnsResolver:
         type: string
         description: |
@@ -72,10 +80,10 @@ node_types:
         type: string
         description: |
           ZD, the name space where the reverse proxy should be deployed (ex. pf-acc--portail-metier).
-      deploymentName:
+      uc_id:
         type: string
         description: |
-          UD, the deployment name, should be unique (use the module qualified name), and K8S naming policy compliant.
+          UD, the use case ID, should be unique (maybe use the module qualified name ?), and K8S naming policy compliant.
       imageUrl:
         type: string
         description: |
@@ -88,3 +96,41 @@ node_types:
         type: string
         description: |
           ZD, the external proxy host name (for example: proxy.cd.artemis).
+      ingressClass:
+        type: string
+        description: |
+          ZD, the value of the annotation kubernetes.io/ingress.class (for example: nginx-cd).
+    interfaces:
+      Standard:
+        create:
+          inputs:
+            kubeConfig: { get_property: [ SELF, kubeConfig ] }
+            iamBaseUrl: { get_property: [SELF, iamBaseUrl] }
+            smdUrl: { get_property: [SELF, smdUrl] }
+            smdUser: { get_property: [SELF, smdUser] }
+            smdPassword: { get_property: [SELF, smdPassword] }
+            portalClient: { get_property: [SELF, portalClient] }
+            portalSecret: { get_property: [SELF, portalSecret] }
+            portalBaseUrl: { get_property: [SELF, portalBaseUrl] }
+            replicaCount: { get_property: [SELF, replicaCount] }
+            locationOptions: { get_property: [SELF, locationOptions] }
+            serviceUpstreamUrl: { get_property: [SELF, serviceUpstreamUrl] }
+            proxyBaseUrl: { get_property: [SELF, proxyBaseUrl] }
+            dnsResolver: { get_property: [SELF, dnsResolver] }
+            zoneNamespace: { get_property: [SELF, zoneNamespace] }
+            uc_id: { get_property: [SELF, uc_id] }
+            imageUrl: { get_property: [SELF, imageUrl] }
+            contextPath: { get_property: [SELF, contextPath] }
+            proxyHost: { get_property: [SELF, proxyHost] }
+            ingressClass: { get_property: [SELF, ingressClass] }
+          implementation: playbook/create.yml
+        delete:
+          inputs:
+            kubeConfig: { get_property: [ SELF, kubeConfig ] }
+            zoneNamespace: { get_property: [SELF, zoneNamespace] }
+            uc_id: { get_property: [SELF, uc_id] }
+          implementation: playbook/delete.yml
+    artifacts:
+      - templates:
+          type: tosca.artifacts.File
+          file: templates
