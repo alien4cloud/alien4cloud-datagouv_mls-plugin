@@ -36,6 +36,4 @@ public class DatagouvMLSConfiguration {
     private String getPdsUrl;
 
     private String pdsIhmUrl;
-
-    private String proxyBaseUrl;
 }

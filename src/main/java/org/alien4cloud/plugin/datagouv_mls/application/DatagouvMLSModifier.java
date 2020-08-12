@@ -23,7 +23,6 @@ import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ComplexPropertyValue;
 import org.alien4cloud.tosca.model.definitions.Operation;
 import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
-import org.alien4cloud.tosca.model.templates.Capability;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.RelationshipTemplate;
 import org.alien4cloud.tosca.model.templates.Topology;
@@ -56,7 +55,6 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -503,17 +501,6 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         metadata.put("annotations", annotations);
         metadata.put("labels", labels);
         setNodePropertyPathValue(null, topology, kubeNSNode, "metadata", new ComplexPropertyValue(metadata));
-
-        /* set base url on services */
-        Set<NodeTemplate> kubeNodes = TopologyNavigationUtil.getNodesOfType(topology, K8S_TYPES_KUBE_SERVICE, true);
-        String baseUrl = MessageFormat.format(configuration.getProxyBaseUrl(), level);
-        for (NodeTemplate serviceNode : safe(kubeNodes)) {
-           Capability endpoint = safe(serviceNode.getCapabilities()).get("service_endpoint");
-           String proxiedStr = PropertyUtil.getScalarPropertyValueFromPath(endpoint.getProperties(), "proxied");
-           if ((proxiedStr != null) && proxiedStr.equals("true")) {         
-              endpoint.getProperties().put("base_url", new ScalarPropertyValue(baseUrl));
-           }
-        }
 
         /* process modules if any */
         if ((pds.getModules() == null) || (pds.getModules().size() == 0)) {

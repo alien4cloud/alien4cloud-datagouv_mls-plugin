@@ -9,6 +9,8 @@ import alien4cloud.events.DeploymentCreatedEvent;
 import alien4cloud.model.application.ApplicationEnvironment;
 import alien4cloud.model.common.MetaPropertyTarget;
 import alien4cloud.model.deployment.Deployment;
+import alien4cloud.model.orchestrators.locations.Location;
+import alien4cloud.orchestrators.locations.services.LocationService;
 import alien4cloud.paas.IPaasEventListener;
 import alien4cloud.paas.IPaasEventService;
 import alien4cloud.paas.exception.PaaSDeploymentException;
@@ -46,6 +48,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +71,9 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
 
     @Inject
     private DeploymentRuntimeStateService deploymentRuntimeStateService;
+
+    @Inject
+    private LocationService locationService;
 
     @Resource
     private DatagouvMLSConfiguration configuration;
@@ -138,7 +144,8 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
        log.info ("Processing pre-deployment " + deployment.getId());
 
        ApplicationEnvironment env = environmentService.getOrFail(deployment.getEnvironmentId());
-       if (isExempted(deployment.getSourceName() + "-" + env.getName())) {
+       if (isExempted(deployment.getSourceName() + "-" + env.getName()) ||
+           !isModifierActive(deployment)) {
           log.info ("application not processed by datagouv_mls plugin");
           return;
        }
@@ -191,7 +198,8 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
        log.info ("Processing post-deployment " + deployment.getId());
 
        ApplicationEnvironment env = environmentService.getOrFail(deployment.getEnvironmentId());
-       if (isExempted(deployment.getSourceName() + "-" + env.getName())) {
+       if (isExempted(deployment.getSourceName() + "-" + env.getName()) ||
+           !isModifierActive(deployment)) {
           log.info ("application not processed by datagouv_mls plugin");
           return;
        }
@@ -271,7 +279,8 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
           }
        }
        if (appQualifiedName == null) {
-          log.warn ("Cannot find app qualified name");
+          log.warn ("Cannot find app qualified name, cannot process undeployment");
+          return;
        }
        
        String startTime = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")).format(deployment.getStartDate()).toString();
@@ -467,6 +476,17 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
        }
 
        return null;
+    }
+
+    private boolean isModifierActive (Deployment deployment) {
+       for (Location location : locationService.getMultiple (Arrays.asList (deployment.getLocationIds())).values()) {
+          long count = safe(location.getModifiers()).stream().
+                              filter(modifier->modifier.getBeanName().equals("datagouv_mls-modifier")).count();
+          if (count > 0) {
+             return true;
+          }
+       }
+       return false;
     }
 
 }
