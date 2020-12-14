@@ -506,7 +506,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         if ((pds.getModules() == null) || (pds.getModules().size() == 0)) {
            return;
         }
-        for (Module module : pds.getModules()) {
+        for (org.alien4cloud.plugin.datagouv_mls.model.Module module : pds.getModules()) {
            if (module.getName() == null) {
               log.error ("Module has no name: " + module.toString());
            } else {
