@@ -300,7 +300,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 referredEntities.put(moduleGuid, refModule);
         });
 
-        boolean gotPds = false;
+        boolean needRedirect = false;
         try {
             String json = (new ObjectMapper()).writeValueAsString(fullAppli);
             log.debug("JSON=" + json);
@@ -430,17 +430,19 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
                 if (isSet(pds.getErreurZone())) {
                     log.error("DataGouv GetPds error: " + pds.getErreurZone());
+                    needRedirect = true;
                 } else if (!isSet(pds.getZone())) {
                     log.error("DataGouv GetPds response contains no zone!");
-                    if (pds.getMessage() != null) {
+                    if (isSet(pds.getMessage())) {
                        log.error("DataGouv GetPds error: " + pds.getMessage() + " [" + pds.getCode() + "]");
                        context.log().error("Error while getting PDS: " + pds.getMessage() +
                                             (isSet(pds.getCode()) ? " [" + pds.getCode() + "]" : ""));
+                    } else {
+                       context.log().error("Error while getting PDS");
                     }
                 } else {
                     processPds(topology, context, pds, pds.getZone(), appliName);
                     context.log().info("Using PDS " + pds.getZone());
-                    gotPds = true;
                 }
             }
 
@@ -448,7 +450,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
             log.error("Got exception:" + e.getMessage(), e);
         }
 
-        if (!gotPds) {
+        if (needRedirect) {
             String url = configuration.getPdsIhmUrl() + appliName;
             log.info("Redirection URL: " + url);
             context.log().warn("Please use the following URL to continue : " + url);
