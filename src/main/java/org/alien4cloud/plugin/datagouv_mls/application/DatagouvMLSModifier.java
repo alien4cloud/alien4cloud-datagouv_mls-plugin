@@ -334,7 +334,8 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                     log.error("DataGouv response contains no entity !");
                     if (retAppli.getMessage() != null) {
                        log.error("Error while declaring application: " + retAppli.getMessage() + " [" + retAppli.getCode() + "]");
-                       context.log().info("Error while declaring application: " + retAppli.getMessage());
+                       context.log().error("Error while declaring application: " + retAppli.getMessage() +
+                                            (isSet(retAppli.getCode()) ? " [" + retAppli.getCode() + "]" : ""));
                     }
                 } else for (Entity retEntity : retAppli.getEntities()) {
                     if (retEntity.getTypeName().equals(DatagouvMLSConstants.MODULE_INSTANCE_NAME)) {
@@ -433,7 +434,8 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                     log.error("DataGouv GetPds response contains no zone!");
                     if (pds.getMessage() != null) {
                        log.error("DataGouv GetPds error: " + pds.getMessage() + " [" + pds.getCode() + "]");
-                       context.log().info("Error while getting PDS: " + pds.getMessage());
+                       context.log().error("Error while getting PDS: " + pds.getMessage() +
+                                            (isSet(pds.getCode()) ? " [" + pds.getCode() + "]" : ""));
                     }
                 } else {
                     processPds(topology, context, pds, pds.getZone(), appliName);
