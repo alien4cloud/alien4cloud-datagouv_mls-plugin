@@ -33,22 +33,17 @@ public class Ceph extends DataStore {
        /* set guids */
        String bucketGuid = String.valueOf(curGuid);
 
-       /* get ip address from service attribute */
-       String ipAddress = "localhost";
-       if (service instanceof ServiceNodeTemplate) {
-          ServiceNodeTemplate serviceNodeTemplate = (ServiceNodeTemplate)service;
-          ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.http.ip_address");
-       }
-
        /* process pseudodir */
        String spseudodir = "";
        String protocol = "";
        String sbucket = "";
+       String instance = "";
        Capability endpoint = safe(service.getCapabilities()).get("http");
        if (endpoint != null) {
           spseudodir = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("pseudo_dir"));
           protocol = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("protocol"));
           sbucket = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("bucket_name"));
+          instance = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("artemis_instance_name"));
        }
 
        if ((spseudodir == null) || spseudodir.trim().equals("")) {
@@ -60,6 +55,11 @@ public class Ceph extends DataStore {
           context.log().error("No bucket_name set for " + service.getName());
        }
 
+       if ((instance == null) || instance.trim().equals("")) {
+          log.warn ("No artemis_instance_name set for " + service.getName());
+          context.log().error("No artemis_instance_name set for " + service.getName());
+       }
+
        Entity pseudodir = new Entity();
        entities.put (String.valueOf(startGuid), pseudodir);
        pseudodir.setTypeName(getTypeName());
@@ -69,12 +69,12 @@ public class Ceph extends DataStore {
        PseudodirAttributes pattribs = new PseudodirAttributes();
        pattribs.setName(spseudodir);
        pattribs.setObjectPrefix(spseudodir);
-       pattribs.setQualifiedName(protocol + "://" + ipAddress + "/" + sbucket + "/" + spseudodir);
+       pattribs.setQualifiedName(protocol + "://" + instance + "/" + sbucket + "/" + spseudodir);
 
        Entity ibucket = new Entity();
        ibucket.setGuid(bucketGuid);
        ibucket.setTypeName("aws_s3_bucket");
-       ibucket.setQualifiedName(protocol + "://" + ipAddress + "/" + sbucket);
+       ibucket.setQualifiedName(protocol + "://" + instance + "/" + sbucket);
 
        pattribs.setBucket(ibucket);
        pseudodir.setAttributes(pattribs);
@@ -85,7 +85,7 @@ public class Ceph extends DataStore {
        bucket.setTypeName("aws_s3_bucket");
        Attributes battribs = new Attributes();
        battribs.setName(sbucket);
-       battribs.setQualifiedName(protocol + "://" + ipAddress + "/" + sbucket);
+       battribs.setQualifiedName(protocol + "://" + instance + "/" + sbucket);
        bucket.setAttributes(battribs);
        entities.put (bucketGuid, bucket);
 

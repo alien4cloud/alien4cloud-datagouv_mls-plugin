@@ -37,11 +37,16 @@ public class Redis extends DataStore {
           /* set guids */
           String clusterGuid = String.valueOf(curGuid);
 
-          /* get ip address from service attribute */
-          String ipAddress = "localhost";
-          if (service instanceof ServiceNodeTemplate) {
-             ServiceNodeTemplate serviceNodeTemplate = (ServiceNodeTemplate)service;
-             ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.redis_endpoint.ip_address");
+          /* get instance name from  capability property of service */
+          String instance = "";
+          Capability endpoint = safe(service.getCapabilities()).get("redis_endpoint");
+          if (endpoint != null) {
+             instance = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("artemis_instance_name"));
+          }
+
+          if ((instance == null) || instance.trim().equals("")) {
+             log.warn ("No artemis_instance_name set for " + service.getName());
+             context.log().error("No artemis_instance_name set for " + service.getName());
           }
 
           if (vals.size() == 0) {
@@ -61,12 +66,12 @@ public class Redis extends DataStore {
 
              KeyAttributes keyattribs = new KeyAttributes();
              keyattribs.setName(skey);
-             keyattribs.setQualifiedName(skey + "." + ipAddress);
+             keyattribs.setQualifiedName(skey + "@" + instance);
 
              Entity cluster = new Entity();
              cluster.setGuid(clusterGuid);
              cluster.setTypeName("redis_cluster");
-             cluster.setQualifiedName(ipAddress);
+             cluster.setQualifiedName(instance);
 
              keyattribs.setCluster(cluster);
              key.setAttributes(keyattribs);
@@ -77,8 +82,8 @@ public class Redis extends DataStore {
            cluster.setGuid(clusterGuid);
            cluster.setTypeName("redis_cluster");
            Attributes cattribs = new Attributes();
-           cattribs.setName(ipAddress);
-           cattribs.setQualifiedName(ipAddress);
+           cattribs.setName(instance);
+           cattribs.setQualifiedName(instance);
            cluster.setAttributes(cattribs);
            entities.put (clusterGuid, cluster);
 

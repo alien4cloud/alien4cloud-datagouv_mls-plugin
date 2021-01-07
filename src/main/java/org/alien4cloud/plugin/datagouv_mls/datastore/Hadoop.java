@@ -30,24 +30,25 @@ public class Hadoop extends DataStore {
     public Map<String,Entity> getEntities (Map<String, AbstractPropertyValue> properties, NodeTemplate service, int startGuid, int curGuid, FlowExecutionContext context) {
        Map<String,Entity> entities = new HashMap<String, Entity>();
 
-       String ipAddress = "";
-       if (service instanceof ServiceNodeTemplate) {
-          ServiceNodeTemplate serviceNodeTemplate = (ServiceNodeTemplate)service;
-          ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.hdfs_repository.ip_address");
-       }
-
-       /* process path */
+       /* process path and instance name */
        String spath = "";
        String protocol = "";
+       String instance = "";
        Capability endpoint = safe(service.getCapabilities()).get("hdfs_repository");
        if (endpoint != null) {
           spath = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("path"));
           protocol = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("protocol"));
+          instance = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("artemis_instance_name"));
        }
 
        if ((spath == null) || spath.trim().equals("")) {
           log.warn ("No path set for " + service.getName());
           context.log().error("No path set for " + service.getName());
+       }
+
+       if ((instance == null) || instance.trim().equals("")) {
+          log.warn ("No artemis_instance_name set for " + service.getName());
+          context.log().error("No artemis_instance_name set for " + service.getName());
        }
 
        Entity path = new Entity();
@@ -58,9 +59,9 @@ public class Hadoop extends DataStore {
 
        PathAttributes attribs = new PathAttributes();
        attribs.setName(spath);
-       attribs.setQualifiedName(protocol + "://" + ipAddress + spath);
+       attribs.setQualifiedName(protocol + "://" + instance + spath);
        attribs.setPath(spath);
-       attribs.setClusterName(ipAddress);
+       attribs.setClusterName(instance);
        path.setAttributes(attribs);
 
        return entities;

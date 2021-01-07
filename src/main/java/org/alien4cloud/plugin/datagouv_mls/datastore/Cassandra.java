@@ -38,22 +38,22 @@ public class Cassandra extends DataStore {
           String ksGuid = String.valueOf(curGuid);
           String clusterGuid = String.valueOf(curGuid-1);
 
-          /* get ip address from service attribute */
-          String ipAddress = "localhost";
-          if (service instanceof ServiceNodeTemplate) {
-             ServiceNodeTemplate serviceNodeTemplate = (ServiceNodeTemplate)service;
-             ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.cassandra_endpoint.ip_address");
-          }
-
-          /* get keyspace from  capability property of service */
+          /* get keyspace and instance name from  capability property of service */
           String ks = "";
+          String instance = "";
           Capability endpoint = safe(service.getCapabilities()).get("cassandra_endpoint");
           if (endpoint != null) {
              ks = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("keyspace"));
+             instance = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("artemis_instance_name"));
           }
           if ((ks == null) || ks.trim().equals("")) {
              log.warn ("No keyspace set for " + service.getName());
              context.log().error("No keyspace set for " + service.getName());
+          }
+
+          if ((instance == null) || instance.trim().equals("")) {
+             log.warn ("No artemis_instance_name set for " + service.getName());
+             context.log().error("No artemis_instance_name set for " + service.getName());
           }
 
           if (vals.size() == 0) {
@@ -73,12 +73,12 @@ public class Cassandra extends DataStore {
 
              TableAttributes tattribs = new TableAttributes();
              tattribs.setName(ntable);
-             tattribs.setQualifiedName(ntable + "." + ks + "." + ipAddress);
+             tattribs.setQualifiedName(ntable + "@" + ks + "@" + instance);
 
              Entity keyspace = new Entity();
              keyspace.setGuid(ksGuid);
              keyspace.setTypeName("cassandra_keyspace");
-             keyspace.setQualifiedName(ks + "." + ipAddress);
+             keyspace.setQualifiedName(ks + "@" + instance);
 
              tattribs.setKeyspace(keyspace);
              table.setAttributes(tattribs);
@@ -90,12 +90,12 @@ public class Cassandra extends DataStore {
            keyspace.setTypeName("cassandra_keyspace");
            KeyspaceAttributes kattribs = new KeyspaceAttributes();
            kattribs.setName(ks);
-           kattribs.setQualifiedName(ks + "." + ipAddress);
+           kattribs.setQualifiedName(ks + "@" + instance);
 
            Entity icluster = new Entity();
            icluster.setGuid(clusterGuid);
            icluster.setTypeName("cassandra_cluster");
-           icluster.setQualifiedName(ipAddress);
+           icluster.setQualifiedName(instance);
 
            kattribs.setCluster(icluster);
            keyspace.setAttributes(kattribs);
@@ -106,8 +106,8 @@ public class Cassandra extends DataStore {
            cluster.setGuid(clusterGuid);
            cluster.setTypeName("cassandra_cluster");
            Attributes cattribs = new Attributes();
-           cattribs.setName(ipAddress);
-           cattribs.setQualifiedName(ipAddress);
+           cattribs.setName(instance);
+           cattribs.setQualifiedName(instance);
            cluster.setAttributes(cattribs);
            entities.put (clusterGuid, cluster);
 

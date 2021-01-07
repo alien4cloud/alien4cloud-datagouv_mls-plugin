@@ -33,18 +33,13 @@ public class Elasticsearch extends DataStore {
        /* set guids */
        String clusterGuid = String.valueOf(curGuid);
 
-       /* get ip address from service attribute */
-       String ipAddress = "localhost";
-       if (service instanceof ServiceNodeTemplate) {
-          ServiceNodeTemplate serviceNodeTemplate = (ServiceNodeTemplate)service;
-          ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.http.ip_address");
-       }
-
-       /* get protocol from  capability property of service */
+       /* get protocol and instance name from  capability property of service */
        String protocol = "";
+       String instance = "";
        Capability http = safe(service.getCapabilities()).get("http");
        if (http != null) {
           protocol = PropertyUtil.getScalarValue(safe(http.getProperties()).get("protocol"));
+          instance = PropertyUtil.getScalarValue(safe(http.getProperties()).get("artemis_instance_name"));
        }
 
        /* process index */
@@ -56,6 +51,11 @@ public class Elasticsearch extends DataStore {
           context.log().error("No index_basename set for " + service.getName());
        }
 
+       if ((instance == null) || instance.trim().equals("")) {
+          log.warn ("No artemis_instance_name set for " + service.getName());
+          context.log().error("No artemis_instance_name set for " + service.getName());
+       }
+
        Entity index = new Entity();
        entities.put (String.valueOf(startGuid), index);
        index.setTypeName(getTypeName());
@@ -64,13 +64,13 @@ public class Elasticsearch extends DataStore {
 
        IndexAttributes idxattribs = new IndexAttributes();
        idxattribs.setName(sindex);
-       idxattribs.setQualifiedName(sindex + "." + ipAddress);
-       idxattribs.setUri(protocol+"://" + ipAddress + "/" + sindex);
+       idxattribs.setQualifiedName(sindex + "@" + instance);
+       idxattribs.setUri(protocol+"://" + instance + "/" + sindex);
 
        Entity icluster = new Entity();
        icluster.setGuid(clusterGuid);
        icluster.setTypeName("elasticsearch_cluster");
-       icluster.setQualifiedName(ipAddress);
+       icluster.setQualifiedName(instance);
 
        idxattribs.setCluster(icluster);
        index.setAttributes(idxattribs);
@@ -80,8 +80,8 @@ public class Elasticsearch extends DataStore {
        cluster.setGuid(clusterGuid);
        cluster.setTypeName("elasticsearch_cluster");
        Attributes cattribs = new Attributes();
-       cattribs.setName(ipAddress);
-       cattribs.setQualifiedName(ipAddress);
+       cattribs.setName(instance);
+       cattribs.setQualifiedName(instance);
        cluster.setAttributes(cattribs);
        entities.put (clusterGuid, cluster);
 

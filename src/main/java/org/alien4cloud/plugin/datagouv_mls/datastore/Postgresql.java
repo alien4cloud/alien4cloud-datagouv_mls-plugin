@@ -37,22 +37,22 @@ public class Postgresql extends DataStore {
           String dbGuid = String.valueOf(curGuid);
           String instanceGuid = String.valueOf(curGuid-1);
 
-          /* get ip address from service attribute */
-          String ipAddress = "localhost";
-          if (service instanceof ServiceNodeTemplate) {
-             ServiceNodeTemplate serviceNodeTemplate = (ServiceNodeTemplate)service;
-             ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.postgresql_endpoint.ip_address");
-          }
-
-          /* get databasename from  capability property of service */
+          /* get databasename and instance name from  capability property of service */
           String databasename = "";
+          String instancename = "";
           Capability endpoint = safe(service.getCapabilities()).get("postgresql_endpoint");
           if (endpoint != null) {
              databasename = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("database"));
+             instancename = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("artemis_instance_name"));
           }
           if ((databasename == null) || databasename.trim().equals("")) {
              log.warn ("No database set for " + service.getName());
              context.log().error("No database set for " + service.getName());
+          }
+
+          if ((instancename == null) || instancename.trim().equals("")) {
+             log.warn ("No artemis_instance_name set for " + service.getName());
+             context.log().error("No artemis_instance_name set for " + service.getName());
           }
 
           if (vals.size() == 0) {
@@ -72,7 +72,7 @@ public class Postgresql extends DataStore {
 
              TableAttributes tattribs = new TableAttributes();
              tattribs.setName(table);
-             tattribs.setQualifiedName(table + "." + databasename + "@" + ipAddress);
+             tattribs.setQualifiedName(table + "@" + databasename + "@" + instancename);
 
              Entity db = new Entity();
              db.setGuid(dbGuid);
@@ -88,7 +88,7 @@ public class Postgresql extends DataStore {
            db.setTypeName("rdbms_db");
            DbAttributes dbattribs = new DbAttributes();
            dbattribs.setName(databasename);
-           dbattribs.setQualifiedName(databasename + "@" + ipAddress);
+           dbattribs.setQualifiedName(databasename + "@" + instancename);
 
            Entity iinstance = new Entity();
            iinstance.setGuid(instanceGuid);
@@ -103,8 +103,8 @@ public class Postgresql extends DataStore {
            instance.setGuid(instanceGuid);
            instance.setTypeName("rdbms_instance");
            InstAttributes iattribs = new InstAttributes();
-           iattribs.setName(ipAddress);
-           iattribs.setQualifiedName(ipAddress);
+           iattribs.setName(instancename);
+           iattribs.setQualifiedName(instancename);
            iattribs.setRdbms_type("postgresql");
            instance.setAttributes(iattribs);
            entities.put (instanceGuid, instance);
