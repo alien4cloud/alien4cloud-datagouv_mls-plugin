@@ -25,6 +25,7 @@ import org.alien4cloud.tosca.model.definitions.Operation;
 import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.RelationshipTemplate;
+import org.alien4cloud.tosca.model.templates.ServiceNodeTemplate;
 import org.alien4cloud.tosca.model.templates.Topology;
 import org.alien4cloud.tosca.model.types.NodeType;
 import org.alien4cloud.tosca.utils.TopologyNavigationUtil;
@@ -442,7 +443,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                     }
                 } else {
                     processPds(topology, context, pds, pds.getZone(), appliName);
-                    context.log().info("Using PDS " + pds.getZone());
+                    context.log().info("Using PDS {}, zone {}", isSet(pds.getPds()) ? pds.getPds(): "<not set>", pds.getZone());
                 }
             }
 
@@ -505,6 +506,12 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         metadata.put("annotations", annotations);
         metadata.put("labels", labels);
         setNodePropertyPathValue(null, topology, kubeNSNode, "metadata", new ComplexPropertyValue(metadata));
+
+        /* update zone and pds in services */
+        updateServices (topology, pds);
+
+        /* update zone and pds in spark jobs nodes */
+        updateJobNodes (topology, pds);
 
         /* process modules if any */
         if ((pds.getModules() == null) || (pds.getModules().size() == 0)) {
@@ -628,4 +635,82 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        return (val != null) && !val.trim().equals("");
     }
 
+    private void updateServices (Topology topology, Pds pds) {
+        safe(topology.getNodeTemplates()).forEach ((nodeName, node) -> {
+            if (node instanceof ServiceNodeTemplate) {
+               updateService ((ServiceNodeTemplate)node, pds);
+            }
+        });
+    }
+
+    private void updateService (ServiceNodeTemplate node, Pds pds) {
+       log.debug ("Updating service {}", node.getName());
+       /* update properties */
+       updatePdsVars(node.getProperties(), pds).forEach ((name, value) -> {
+          node.getProperties().put (name, new ScalarPropertyValue (value));
+          log.debug ("Setting property {} to {}", name, value);
+       });
+       /* update capabilities */
+       safe(node.getCapabilities()).forEach ((nameC, capa) -> {
+          updatePdsVars(capa.getProperties(), pds).forEach ((nameP, value) -> {
+             capa.getProperties().put (nameP, new ScalarPropertyValue (value));
+             log.debug ("Setting capability {}, property {} to {}", nameC, nameP, value);
+          });
+       });
+       /* update attributes */
+       updatePdsVars(node.getAttributeValues(), pds).forEach ((name, value) -> {
+          node.getAttributeValues().put (name, value);
+          log.debug ("Setting attribute {} to {}", name, value);
+       });
+    }
+
+    private Map<String,String> updatePdsVars (Map props, Pds pds) {
+       final Map<String, String> newvals = new HashMap<String, String>();
+       safe(props).forEach ((name, valueObj) -> {
+          String value;
+          if (valueObj instanceof ScalarPropertyValue) {
+             value = ((ScalarPropertyValue)valueObj).getValue();
+          } else if (valueObj instanceof String) {
+             value = (String)valueObj;
+          } else {
+             return; // skips this iteration
+          }
+          boolean modified = false;
+          if (value.indexOf("<zone>") != -1) {
+             modified = true;
+             value = value.replaceAll("<zone>", pds.getZone());
+          }
+          if ((value.indexOf("<pds>") != -1) && isSet(pds.getPds())) {
+             modified = true;
+             value = value.replaceAll("<pds>", pds.getPds());
+          }
+          if (modified) {
+             newvals.put((String)name, value);
+          }
+       });
+       return newvals;
+    }       
+
+    private void updateJobNodes (Topology topology, Pds pds) {
+        safe(topology.getNodeTemplates()).forEach ((nodeName, node) -> {
+            NodeType nodeType = ToscaContext.get(NodeType.class, node.getType());
+            if (ToscaTypeUtils.isOfType(nodeType, K8S_TYPES_SPARK_JOBS)) {
+               updateJobNode (node, pds);
+            }
+        });
+    }
+
+    private void updateJobNode (NodeTemplate node, Pds pds) {
+       log.debug ("Updating node {}", node.getName());
+       AbstractPropertyValue varNamesPv = node.getProperties().get(DatagouvMLSConstants.VAR_VALUES_PROPERTY);
+       if (varNamesPv != null && varNamesPv instanceof ComplexPropertyValue) {
+          Map<String, Object> varValues = ((ComplexPropertyValue) varNamesPv).getValue();
+
+          updatePdsVars(varValues, pds).forEach ((name, value) -> {
+             varValues.put (name, new ScalarPropertyValue(value));
+             log.debug ("Setting value {} to {}", name, value);
+          });
+       }
+    }
 }
+
