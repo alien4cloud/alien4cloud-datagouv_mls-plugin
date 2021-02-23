@@ -38,22 +38,22 @@ public class Mongodb extends DataStore {
           String dbGuid = String.valueOf(curGuid);
           String clusterGuid = String.valueOf(curGuid-1);
 
-          /* get ip address from service attribute */
-          String ipAddress = "localhost";
-          if (service instanceof ServiceNodeTemplate) {
-             ServiceNodeTemplate serviceNodeTemplate = (ServiceNodeTemplate)service;
-             ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.mongodb_endpoint.ip_address");
-          }
-
-          /* get databasename from  capability property of service */
+          /* get databasename and instancename from  capability property of service */
           String databasename = "";
+          String instance = "";
           Capability endpoint = safe(service.getCapabilities()).get("mongodb_endpoint");
           if (endpoint != null) {
              databasename = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("databasename"));
+             instance = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("artemis_instance_name"));
           }
           if ((databasename == null) || databasename.trim().equals("")) {
              log.warn ("No databasename set for " + service.getName());
              context.log().error("No databasename set for " + service.getName());
+          }
+
+          if ((instance == null) || instance.trim().equals("")) {
+             log.warn ("No artemis_instance_name set for " + service.getName());
+             context.log().error("No artemis_instance_name set for " + service.getName());
           }
 
           if (vals.size() == 0) {
@@ -73,12 +73,12 @@ public class Mongodb extends DataStore {
 
              CollectionAttributes collattribs = new CollectionAttributes();
              collattribs.setName(collection);
-             collattribs.setQualifiedName(collection + "." + databasename + "." + ipAddress);
+             collattribs.setQualifiedName(collection + "@" + databasename + "@" + instance);
 
              Entity db = new Entity();
              db.setGuid(dbGuid);
              db.setTypeName("mongo_db");
-             db.setQualifiedName(databasename + "." + ipAddress);
+             db.setQualifiedName(databasename + "@" + instance);
 
              collattribs.setDb(db);
              coll.setAttributes(collattribs);
@@ -90,12 +90,12 @@ public class Mongodb extends DataStore {
            db.setTypeName("mongo_db");
            DbAttributes dbattribs = new DbAttributes();
            dbattribs.setName(databasename);
-           dbattribs.setQualifiedName(databasename + "." + ipAddress);
+           dbattribs.setQualifiedName(databasename + "@" + instance);
 
            Entity icluster = new Entity();
            icluster.setGuid(clusterGuid);
            icluster.setTypeName("mongo_cluster");
-           icluster.setQualifiedName(ipAddress);
+           icluster.setQualifiedName(instance);
 
            dbattribs.setCluster(icluster);
            db.setAttributes(dbattribs);
@@ -106,8 +106,8 @@ public class Mongodb extends DataStore {
            cluster.setGuid(clusterGuid);
            cluster.setTypeName("mongo_cluster");
            Attributes cattribs = new Attributes();
-           cattribs.setName(ipAddress);
-           cattribs.setQualifiedName(ipAddress);
+           cattribs.setName(instance);
+           cattribs.setQualifiedName(instance);
            cluster.setAttributes(cattribs);
            entities.put (clusterGuid, cluster);
 

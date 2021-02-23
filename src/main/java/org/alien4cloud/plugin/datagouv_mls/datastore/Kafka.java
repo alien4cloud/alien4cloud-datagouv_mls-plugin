@@ -30,13 +30,6 @@ public class Kafka extends DataStore {
     public Map<String,Entity> getEntities (Map<String, AbstractPropertyValue> properties, NodeTemplate service, int startGuid, int curGuid, FlowExecutionContext context) {
        Map<String,Entity> entities = new HashMap<String, Entity>();
 
-       /* get ip address from service attribute */
-       String ipAddress = "localhost";
-       if (service instanceof ServiceNodeTemplate) {
-          ServiceNodeTemplate serviceNodeTemplate = (ServiceNodeTemplate)service;
-          ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.kafka_topic.ip_address");
-       }
-
        /* process topic */
        String stopic = "";
        stopic = PropertyUtil.getScalarValue(safe(service.getProperties()).get("topic_name"));
@@ -44,6 +37,18 @@ public class Kafka extends DataStore {
        if ((stopic == null) || stopic.trim().equals("")) {
           log.warn ("No topic_name set for " + service.getName());
           context.log().error("No topic_name set for " + service.getName());
+       }
+
+       /* process instance name */
+       String instance = "";
+       Capability endpoint = safe(service.getCapabilities()).get("kafka_topic");
+       if (endpoint != null) {
+          instance = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("artemis_instance_name"));
+       }
+
+       if ((instance == null) || instance.trim().equals("")) {
+          log.warn ("No artemis_instance_name set for " + service.getName());
+          context.log().error("No artemis_instance_name set for " + service.getName());
        }
 
        Entity topic = new Entity();
@@ -54,10 +59,10 @@ public class Kafka extends DataStore {
 
        TopicAttributes tattribs = new TopicAttributes();
        tattribs.setName(stopic);
-       tattribs.setQualifiedName(stopic + "@" + ipAddress);
+       tattribs.setQualifiedName(stopic + "@" + instance);
        tattribs.setTopic(stopic);
-       tattribs.setUri(stopic + "@" + ipAddress);
-       tattribs.setClusterName(ipAddress);
+       tattribs.setUri(stopic + "@" + instance);
+       tattribs.setClusterName(instance);
        topic.setAttributes(tattribs);
 
        return entities;

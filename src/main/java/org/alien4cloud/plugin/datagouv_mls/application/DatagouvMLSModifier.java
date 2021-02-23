@@ -25,6 +25,7 @@ import org.alien4cloud.tosca.model.definitions.Operation;
 import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.RelationshipTemplate;
+import org.alien4cloud.tosca.model.templates.ServiceNodeTemplate;
 import org.alien4cloud.tosca.model.templates.Topology;
 import org.alien4cloud.tosca.model.types.NodeType;
 import org.alien4cloud.tosca.utils.TopologyNavigationUtil;
@@ -300,7 +301,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 referredEntities.put(moduleGuid, refModule);
         });
 
-        boolean gotPds = false;
+        boolean needRedirect = false;
         try {
             String json = (new ObjectMapper()).writeValueAsString(fullAppli);
             log.debug("JSON=" + json);
@@ -334,7 +335,8 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                     log.error("DataGouv response contains no entity !");
                     if (retAppli.getMessage() != null) {
                        log.error("Error while declaring application: " + retAppli.getMessage() + " [" + retAppli.getCode() + "]");
-                       context.log().info("Error while declaring application: " + retAppli.getMessage());
+                       context.log().error("Error while declaring application: " + retAppli.getMessage() +
+                                            (isSet(retAppli.getCode()) ? " [" + retAppli.getCode() + "]" : ""));
                     }
                 } else for (Entity retEntity : retAppli.getEntities()) {
                     if (retEntity.getTypeName().equals(DatagouvMLSConstants.MODULE_INSTANCE_NAME)) {
@@ -406,10 +408,6 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
             }
             context.getExecutionCache().put(FlowExecutionContext.INITIAL_TOPOLOGY, CloneUtil.clone(topology));
 
-            /* store application description to be used by DataGouvMLSListener on validatation phase */
-            dgvListener.storeAppli(context.getEnvironmentContext().get().getApplication().getName() + "-" + 
-                                   context.getEnvironmentContext().get().getEnvironment().getName(), fullAppli);
-
             /* send request to getPds */
             commands = new String[5];
             commands[0] = "curl";
@@ -429,16 +427,23 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
                 if (isSet(pds.getErreurZone())) {
                     log.error("DataGouv GetPds error: " + pds.getErreurZone());
+                    needRedirect = true;
                 } else if (!isSet(pds.getZone())) {
                     log.error("DataGouv GetPds response contains no zone!");
-                    if (pds.getMessage() != null) {
+                    if (isSet(pds.getMessage())) {
                        log.error("DataGouv GetPds error: " + pds.getMessage() + " [" + pds.getCode() + "]");
-                       context.log().info("Error while getting PDS: " + pds.getMessage());
+                       context.log().error("Error while getting PDS: " + pds.getMessage() +
+                                            (isSet(pds.getCode()) ? " [" + pds.getCode() + "]" : ""));
+                    } else {
+                       context.log().error("Error while getting PDS");
                     }
                 } else {
                     processPds(topology, context, pds, pds.getZone(), appliName);
-                    context.log().info("Using PDS " + pds.getZone());
-                    gotPds = true;
+                    context.log().info("Using PDS {}, zone {}", isSet(pds.getPds()) ? pds.getPds(): "<not set>", pds.getZone());
+
+                    /* store application description to be used by DataGouvMLSListener on validatation phase */
+                    dgvListener.storeAppli(context.getEnvironmentContext().get().getApplication().getName() + "-" + 
+                                           context.getEnvironmentContext().get().getEnvironment().getName(), fullAppli, pds);
                 }
             }
 
@@ -446,7 +451,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
             log.error("Got exception:" + e.getMessage(), e);
         }
 
-        if (!gotPds) {
+        if (needRedirect) {
             String url = configuration.getPdsIhmUrl() + appliName;
             log.info("Redirection URL: " + url);
             context.log().warn("Please use the following URL to continue : " + url);
@@ -501,6 +506,12 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         metadata.put("annotations", annotations);
         metadata.put("labels", labels);
         setNodePropertyPathValue(null, topology, kubeNSNode, "metadata", new ComplexPropertyValue(metadata));
+
+        /* update zone and pds in services */
+        updateServices (topology, pds);
+
+        /* update zone and pds in spark jobs nodes */
+        updateJobNodes (topology, pds);
 
         /* process modules if any */
         if ((pds.getModules() == null) || (pds.getModules().size() == 0)) {
@@ -624,4 +635,82 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        return (val != null) && !val.trim().equals("");
     }
 
+    private void updateServices (Topology topology, Pds pds) {
+        safe(topology.getNodeTemplates()).forEach ((nodeName, node) -> {
+            if (node instanceof ServiceNodeTemplate) {
+               updateService ((ServiceNodeTemplate)node, pds);
+            }
+        });
+    }
+
+    private void updateService (ServiceNodeTemplate node, Pds pds) {
+       log.debug ("Updating service {}", node.getName());
+       /* update properties */
+       updatePdsVars(node.getProperties(), pds).forEach ((name, value) -> {
+          node.getProperties().put (name, new ScalarPropertyValue (value));
+          log.debug ("Setting property {} to {}", name, value);
+       });
+       /* update capabilities */
+       safe(node.getCapabilities()).forEach ((nameC, capa) -> {
+          updatePdsVars(capa.getProperties(), pds).forEach ((nameP, value) -> {
+             capa.getProperties().put (nameP, new ScalarPropertyValue (value));
+             log.debug ("Setting capability {}, property {} to {}", nameC, nameP, value);
+          });
+       });
+       /* update attributes */
+       updatePdsVars(node.getAttributeValues(), pds).forEach ((name, value) -> {
+          node.getAttributeValues().put (name, value);
+          log.debug ("Setting attribute {} to {}", name, value);
+       });
+    }
+
+    private Map<String,String> updatePdsVars (Map props, Pds pds) {
+       final Map<String, String> newvals = new HashMap<String, String>();
+       safe(props).forEach ((name, valueObj) -> {
+          String value;
+          if (valueObj instanceof ScalarPropertyValue) {
+             value = ((ScalarPropertyValue)valueObj).getValue();
+          } else if (valueObj instanceof String) {
+             value = (String)valueObj;
+          } else {
+             return; // skips this iteration
+          }
+          boolean modified = false;
+          if (value.indexOf("<zone>") != -1) {
+             modified = true;
+             value = value.replaceAll("<zone>", pds.getZone());
+          }
+          if ((value.indexOf("<pds>") != -1) && isSet(pds.getPds())) {
+             modified = true;
+             value = value.replaceAll("<pds>", pds.getPds());
+          }
+          if (modified) {
+             newvals.put((String)name, value);
+          }
+       });
+       return newvals;
+    }       
+
+    private void updateJobNodes (Topology topology, Pds pds) {
+        safe(topology.getNodeTemplates()).forEach ((nodeName, node) -> {
+            NodeType nodeType = ToscaContext.get(NodeType.class, node.getType());
+            if (ToscaTypeUtils.isOfType(nodeType, K8S_TYPES_SPARK_JOBS)) {
+               updateJobNode (node, pds);
+            }
+        });
+    }
+
+    private void updateJobNode (NodeTemplate node, Pds pds) {
+       log.debug ("Updating node {}", node.getName());
+       AbstractPropertyValue varNamesPv = node.getProperties().get(DatagouvMLSConstants.VAR_VALUES_PROPERTY);
+       if (varNamesPv != null && varNamesPv instanceof ComplexPropertyValue) {
+          Map<String, Object> varValues = ((ComplexPropertyValue) varNamesPv).getValue();
+
+          updatePdsVars(varValues, pds).forEach ((name, value) -> {
+             varValues.put (name, new ScalarPropertyValue(value));
+             log.debug ("Setting value {} to {}", name, value);
+          });
+       }
+    }
 }
+

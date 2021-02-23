@@ -79,18 +79,16 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
     private DatagouvMLSConfiguration configuration;
 
     private Map<String,Application> applis = new HashMap<String,Application>();
+    private Map<String,Pds> applisPds = new HashMap<String,Pds>();
     private List<String> exemptedApplis = new ArrayList<String>();
 
-    public void storeAppli (String name, Application appli) {
-       synchronized(this) {
-          applis.put (name, appli);
-       }
+    public void storeAppli (String name, Application appli, Pds pds) {
+       applis.put (name, appli);
+       applisPds.put (name, pds);
     }
 
     public void storeExemptedAppli (String name) {
-       synchronized(this) {
-          exemptedApplis.add (name);
-       }
+       exemptedApplis.add (name);
     }
 
     private boolean isExempted(String appli) {
@@ -206,8 +204,15 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
 
        try {
           Application fullAppli = applis.get(deployment.getSourceName() + "-" + env.getName());
+          Pds pds = applisPds.get(deployment.getSourceName() + "-" + env.getName());
           fullAppli.getEntities().get(0).getAttributes().setStatus("VALIDATED");
           String json = (new ObjectMapper()).writeValueAsString(fullAppli);
+          if (json.indexOf("<zone>") != -1) {
+             json = json.replaceAll("<zone>", pds.getZone());
+          }
+          if ((json.indexOf("<pds>") != -1) && isSet(pds.getPds())) {
+             json = json.replaceAll("<pds>", pds.getPds());
+          }
           log.debug("JSON=" + json);
 
           Path path = Files.createTempFile("dgv", ".json");
@@ -269,6 +274,7 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
           return;
        }
        applis.remove(appliName);
+       applisPds.remove(appliName);
 
        Topology topology = deploymentRuntimeStateService.getUnprocessedTopology(deployment.getId());
        String appQualifiedName = null;
@@ -487,6 +493,10 @@ public class DatagouvMLSListener implements ApplicationListener<DeploymentCreate
           }
        }
        return false;
+    }
+
+    private boolean isSet(String val) {
+       return (val != null) && !val.trim().equals("");
     }
 
 }

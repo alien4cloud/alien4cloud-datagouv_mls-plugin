@@ -38,22 +38,22 @@ public class Accumulo extends DataStore {
           String nsGuid = String.valueOf(curGuid);
           String clusterGuid = String.valueOf(curGuid-1);
 
-          /* get ip address from service attribute */
-          String ipAddress = "localhost";
-          if (service instanceof ServiceNodeTemplate) {
-             ServiceNodeTemplate serviceNodeTemplate = (ServiceNodeTemplate)service;
-             ipAddress = safe(serviceNodeTemplate.getAttributeValues()).get("capabilities.accumulo_endpoint.ip_address");
-          }
-
           /* get some capability properties of service */
           String ns = "";
+          String instance = "";
           Capability endpoint = safe(service.getCapabilities()).get("accumulo_endpoint");
           if (endpoint != null) {
              ns = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("namespace"));
+             instance = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("artemis_instance_name"));
           }
           if ((ns == null) || ns.trim().equals("")) {
              log.warn ("No namespace set for " + service.getName());
              context.log().error("No namespace set for " + service.getName());
+          }
+
+          if ((instance == null) || instance.trim().equals("")) {
+             log.warn ("No artemis_instance_name set for " + service.getName());
+             context.log().error("No artemis_instance_name set for " + service.getName());
           }
 
           if (vals.size() == 0) {
@@ -73,12 +73,12 @@ public class Accumulo extends DataStore {
 
              TableAttributes tattribs = new TableAttributes();
              tattribs.setName(ntable);
-             tattribs.setQualifiedName(ntable + "." + ns + "." + ipAddress);
+             tattribs.setQualifiedName(ntable + "@" + ns + "@" + instance);
 
              Entity namespace = new Entity();
              namespace.setGuid(nsGuid);
              namespace.setTypeName("accumulo_namespace");
-             namespace.setQualifiedName(ns + "." + ipAddress);
+             namespace.setQualifiedName(ns + "@" + instance);
 
              tattribs.setNamespace(namespace);
              table.setAttributes(tattribs);
@@ -90,12 +90,12 @@ public class Accumulo extends DataStore {
            namespace.setTypeName("accumulo_namespace");
            NamespaceAttributes nsattribs = new NamespaceAttributes();
            nsattribs.setName(ns);
-           nsattribs.setQualifiedName(ns + "." + ipAddress);
+           nsattribs.setQualifiedName(ns + "@" + instance);
 
            Entity icluster = new Entity();
            icluster.setGuid(clusterGuid);
            icluster.setTypeName("accumulo_cluster");
-           icluster.setQualifiedName(ipAddress);
+           icluster.setQualifiedName(instance);
 
            nsattribs.setCluster(icluster);
            namespace.setAttributes(nsattribs);
@@ -106,8 +106,8 @@ public class Accumulo extends DataStore {
            cluster.setGuid(clusterGuid);
            cluster.setTypeName("accumulo_cluster");
            Attributes cattribs = new Attributes();
-           cattribs.setName(ipAddress);
-           cattribs.setQualifiedName(ipAddress);
+           cattribs.setName(instance);
+           cattribs.setQualifiedName(instance);
            cluster.setAttributes(cattribs);
            entities.put (clusterGuid, cluster);
 
