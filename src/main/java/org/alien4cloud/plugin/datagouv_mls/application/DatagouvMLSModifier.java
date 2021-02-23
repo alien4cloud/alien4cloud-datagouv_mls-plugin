@@ -408,10 +408,6 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
             }
             context.getExecutionCache().put(FlowExecutionContext.INITIAL_TOPOLOGY, CloneUtil.clone(topology));
 
-            /* store application description to be used by DataGouvMLSListener on validatation phase */
-            dgvListener.storeAppli(context.getEnvironmentContext().get().getApplication().getName() + "-" + 
-                                   context.getEnvironmentContext().get().getEnvironment().getName(), fullAppli);
-
             /* send request to getPds */
             commands = new String[5];
             commands[0] = "curl";
@@ -444,6 +440,10 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 } else {
                     processPds(topology, context, pds, pds.getZone(), appliName);
                     context.log().info("Using PDS {}, zone {}", isSet(pds.getPds()) ? pds.getPds(): "<not set>", pds.getZone());
+
+                    /* store application description to be used by DataGouvMLSListener on validatation phase */
+                    dgvListener.storeAppli(context.getEnvironmentContext().get().getApplication().getName() + "-" + 
+                                           context.getEnvironmentContext().get().getEnvironment().getName(), fullAppli, pds);
                 }
             }
 
