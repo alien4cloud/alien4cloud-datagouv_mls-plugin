@@ -19,6 +19,8 @@ public class Attributes {
 
    String qualifiedName;
 
+   String bacASable;
+
    String version;
 
    String startTime;

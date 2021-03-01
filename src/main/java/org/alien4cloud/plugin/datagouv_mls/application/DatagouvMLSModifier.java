@@ -5,6 +5,8 @@ import alien4cloud.deployment.DeploymentRuntimeStateService;
 import alien4cloud.exception.NotFoundException;
 import alien4cloud.model.common.MetaPropertyTarget;
 import alien4cloud.model.common.Tag;
+import alien4cloud.model.orchestrators.locations.Location;
+import alien4cloud.orchestrators.locations.services.LocationService;
 import alien4cloud.paas.wf.validation.WorkflowValidator;
 import alien4cloud.tosca.context.ToscaContext;
 import alien4cloud.tosca.context.ToscaContextual;
@@ -18,6 +20,7 @@ import alien4cloud.utils.PropertyUtil;
 import org.alien4cloud.alm.deployment.configuration.flow.EnvironmentContext;
 import org.alien4cloud.alm.deployment.configuration.flow.FlowExecutionContext;
 import org.alien4cloud.alm.deployment.configuration.flow.TopologyModifierSupport;
+import org.alien4cloud.alm.deployment.configuration.model.DeploymentMatchingConfiguration;
 import org.alien4cloud.tosca.model.CSARDependency;
 import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ComplexPropertyValue;
@@ -80,6 +83,9 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
     private DeploymentRuntimeStateService deploymentRuntimeStateService;
 
     @Inject
+    private LocationService locationService;
+
+    @Inject
     private DatagouvMLSListener dgvListener;
 
     private int guid = -1;
@@ -91,6 +97,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
     }
 
     private static final String CUNAME_PROP = "Cas d'usage";
+    private static final String BAS_PROP = "Bac à sable";
 
     @Override
     @ToscaContextual
@@ -160,6 +167,32 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
            return;
         }
 
+        Optional<DeploymentMatchingConfiguration> configurationOptional = context.getConfiguration(DeploymentMatchingConfiguration.class,
+                DatagouvMLSModifier.class.getSimpleName());
+
+        if (!configurationOptional.isPresent()) {
+            log.warn("Cannot get DeploymentMatchingConfiguration");
+        }
+        DeploymentMatchingConfiguration matchingConfiguration = configurationOptional.get();
+        String locationId = matchingConfiguration.getLocationIds().get("_A4C_ALL");
+        if (!isSet(locationId)) {
+            log.warn("Cannot get location");
+        }
+        Location location = locationService.getOrFail(locationId);
+        String basMetaPropertyKey = this.metaPropertiesService.getMetapropertykeyByName(BAS_PROP, MetaPropertyTarget.LOCATION);
+        String sBas = "false";
+        if (basMetaPropertyKey == null) {
+            log.warn("{} metaproperty does not exist", BAS_PROP);
+        } else {
+           sBas = safe(location.getMetaProperties()).get(basMetaPropertyKey);
+           if (sBas == null) {
+              log.info("{} metaproperty not set on location, using false", BAS_PROP);
+              sBas = "false";
+           } else {
+              log.debug("{}:{}", BAS_PROP, sBas);
+           }
+        }
+
         Tag apqnTag = new Tag();
         apqnTag.setName(DatagouvMLSConstants.QN_TAGNAME);
         apqnTag.setValue(appliName);
@@ -191,6 +224,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         aattribs.setVersion(appVersion);
         aattribs.setStartTime(now);
         aattribs.setStatus("PROPOSED");
+        aattribs.setBacASable(sBas);
         appli.setAttributes(aattribs);
         appli.setGuid(appliId);
 
