@@ -357,7 +357,10 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
             StringBuffer output = new StringBuffer();
             StringBuffer error = new StringBuffer();
 
-            int ret = ProcessLauncher.launch(commands, output, error);
+            int ret = -1;
+            synchronized(this) {
+               ret = ProcessLauncher.launch(commands, output, error);
+            }
             Files.delete(path);
             if (ret != 0) {
                 log.error("Error " + ret + " [" + error.toString() + "]");
