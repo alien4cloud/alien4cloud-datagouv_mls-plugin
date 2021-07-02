@@ -1,15 +1,21 @@
 package org.alien4cloud.plugin.datagouv_mls.datastore;
 
 import org.alien4cloud.alm.deployment.configuration.flow.FlowExecutionContext;
+import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConfiguration;
 import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ListPropertyValue;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.plugin.datagouv_mls.model.Entity;
 
+import lombok.Setter;
+
 import java.util.List;
 import java.util.Map;
 
 public abstract class DataStore {
+
+   @Setter
+   protected DatagouvMLSConfiguration configuration;
 
    public abstract String getTypeName();
 

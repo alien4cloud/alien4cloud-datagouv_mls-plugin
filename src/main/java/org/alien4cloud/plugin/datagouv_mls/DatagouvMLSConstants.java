@@ -35,7 +35,8 @@ public class DatagouvMLSConstants {
         { "artemis.elasticsearch.pub.capabilities.ElasticSearchRestAPI", Elasticsearch.class },
         { "artemis.kafka.pub.capabilities.KafkaTopic", Kafka.class },
         { "artemis.hadoop.pub.capabilities.HdfsRepository", Hadoop.class },
-        { "artemis.ceph.pub.capabilities.CephBucketEndpoint", Ceph.class }
+        { "artemis.ceph.pub.capabilities.CephBucketEndpoint", Ceph.class },
+        { "artemis.pvk8s.pub.capabilities.PVK8SEndpoint", PV.class }
 
     }).collect(Collectors.toMap(data -> (String) data[0], data -> (Class) data[1]));
 

@@ -288,6 +288,7 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
                         try {
                             DataStore ds = (DataStore) DatagouvMLSConstants.dataStoreTypes.get(relationships.get(nrel).getRequirementType()).newInstance();
+                            ds.setConfiguration(configuration);
                             servicesToDs.put(serviceNode.getName(), ds);
                             String typeName = ds.getTypeName();
                             /* get number of first level elements for datastore in order to generate inputs & outputs */
