@@ -193,6 +193,35 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
            }
         }
 
+        Pds pds = null;
+        try {
+            /* send request to getPds */
+            String[] commands = new String[5];
+            commands[0] = "curl";
+            commands[1] = "-k";
+            commands[2] = "-u";
+            commands[3] = configuration.getGetPdsCredentials();
+            commands[4] = configuration.getGetPdsUrl() + URLEncoder.encode(appliName, StandardCharsets.UTF_8.toString());
+            StringBuffer output = new StringBuffer();
+            StringBuffer error = new StringBuffer();
+
+            log.debug ("Checking for existing PDS");
+            int ret = ProcessLauncher.launch(commands, output, error);
+            if (ret != 0) {
+                log.error("Error " + ret + "[" + error.toString() + "]");
+            } else {
+                log.debug("GET PDS RESPONSE=" + output.toString());
+                Pds respPds = (new ObjectMapper()).readValue(output.toString(), Pds.class);
+    
+                if (isSet(respPds.getPds()) && isSet(respPds.getZone())) {
+                   pds = respPds;
+                   updateServices (topology, pds);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Got exception:" + e.getMessage(), e);
+        }
+
         Tag apqnTag = new Tag();
         apqnTag.setName(DatagouvMLSConstants.QN_TAGNAME);
         apqnTag.setValue(appliName);
@@ -446,23 +475,27 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
             }
             context.getExecutionCache().put(FlowExecutionContext.INITIAL_TOPOLOGY, CloneUtil.clone(topology));
 
-            /* send request to getPds */
-            commands = new String[5];
-            commands[0] = "curl";
-            commands[1] = "-k";
-            commands[2] = "-u";
-            commands[3] = configuration.getGetPdsCredentials();
-            commands[4] = configuration.getGetPdsUrl() + URLEncoder.encode(appliName, StandardCharsets.UTF_8.toString());
-            output = new StringBuffer();
-            error = new StringBuffer();
+            if (pds == null) {
+                /* send request to getPds */
+                commands = new String[5];
+                commands[0] = "curl";
+                commands[1] = "-k";
+                commands[2] = "-u";
+                commands[3] = configuration.getGetPdsCredentials();
+                commands[4] = configuration.getGetPdsUrl() + URLEncoder.encode(appliName, StandardCharsets.UTF_8.toString());
+                output = new StringBuffer();
+                error = new StringBuffer();
 
-            ret = ProcessLauncher.launch(commands, output, error);
-            if (ret != 0) {
-                log.error("Error " + ret + "[" + error.toString() + "]");
-            } else {
-                log.debug("GET PDS RESPONSE=" + output.toString());
-                Pds pds = (new ObjectMapper()).readValue(output.toString(), Pds.class);
+                ret = ProcessLauncher.launch(commands, output, error);
+                if (ret != 0) {
+                    log.error("Error " + ret + "[" + error.toString() + "]");
+                } else {
+                    log.debug("GET PDS RESPONSE=" + output.toString());
+                    pds = (new ObjectMapper()).readValue(output.toString(), Pds.class);
+                }
+            }
 
+            if (pds != null) {
                 if (isSet(pds.getErreurZone())) {
                     log.error("DataGouv GetPds error: " + pds.getErreurZone());
                     needRedirect = true;
