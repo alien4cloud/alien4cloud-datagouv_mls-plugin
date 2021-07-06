@@ -26,11 +26,13 @@ import org.alien4cloud.tosca.model.definitions.AbstractPropertyValue;
 import org.alien4cloud.tosca.model.definitions.ComplexPropertyValue;
 import org.alien4cloud.tosca.model.definitions.Operation;
 import org.alien4cloud.tosca.model.definitions.ScalarPropertyValue;
+import org.alien4cloud.tosca.model.templates.Capability;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.RelationshipTemplate;
 import org.alien4cloud.tosca.model.templates.ServiceNodeTemplate;
 import org.alien4cloud.tosca.model.templates.Topology;
 import org.alien4cloud.tosca.model.types.NodeType;
+import org.alien4cloud.tosca.normative.constants.NormativeRelationshipConstants;
 import org.alien4cloud.tosca.utils.TopologyNavigationUtil;
 import org.alien4cloud.tosca.utils.ToscaTypeUtils;
 import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConfiguration;
@@ -38,12 +40,14 @@ import org.alien4cloud.plugin.datagouv_mls.DatagouvMLSConstants;
 import org.alien4cloud.plugin.datagouv_mls.utils.ProcessLauncher;
 import org.alien4cloud.plugin.datagouv_mls.utils.TopologyUtils;
 import org.alien4cloud.plugin.datagouv_mls.datastore.DataStore;
+import org.alien4cloud.plugin.datagouv_mls.datastore.PV;
 import org.alien4cloud.plugin.datagouv_mls.model.*;
 
 import static org.alien4cloud.plugin.kubernetes.csar.Version.K8S_CSAR_VERSION;
 import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBE_NAMESPACE;
 import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBECONTAINER;
 import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBE_SERVICE;
+import static org.alien4cloud.plugin.kubernetes.modifier.KubeTopologyUtils.K8S_TYPES_VOLUMES_CLAIM_SC;
 import static alien4cloud.plugin.k8s.spark.jobs.modifier.SparkJobsModifier.K8S_TYPES_SPARK_JOBS;
 
 import org.springframework.stereotype.Component;
@@ -338,6 +342,11 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                             guid -= (dsEntities.size() - nb);
 
                             referredEntities.putAll(dsEntities);
+
+                            /* process PV if any */
+                            if (ds instanceof PV) {
+                              processPV (topology, node, appliName + "-" + nodeName, relationships.get(nrel), serviceNode);
+                            }
                         } catch (Exception e) {
                             log.error("Got exception : " + e.getMessage());
                         }
@@ -782,6 +791,52 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
              log.debug ("Setting value {} to {}", name, value);
           });
        }
+    }
+
+    private void processPV (Topology topology, NodeTemplate node, String qnameModule, RelationshipTemplate connect, NodeTemplate pv) {
+       String pvName = node.getName() + pv.getName();
+       log.debug ("Adding node {} named {}", K8S_TYPES_VOLUMES_CLAIM_SC, pvName);
+       NodeTemplate pvc = addNodeTemplate(null, topology, pvName, K8S_TYPES_VOLUMES_CLAIM_SC, getK8SCsarVersion(topology));
+       log.debug ("Setting name to {}", pvName.toLowerCase());
+       setNodePropertyPathValue(null, topology, pvc, "name", new ScalarPropertyValue(pvName.toLowerCase())); 
+       String sc = configuration.getPvStorageClass();
+       if ((sc == null) || sc.trim().equals("")) {
+          sc = "eds-local-storage";
+       }
+       log.debug ("Setting storageClassName to {}", sc);
+       setNodePropertyPathValue(null, topology, pvc, "storageClassName", new ScalarPropertyValue(sc)); 
+       Capability endpoint = safe(pv.getCapabilities()).get("pvk8s_endpoint");
+       log.debug ("Setting accessModes to {}", endpoint.getProperties().get("accessModes"));
+       setNodePropertyPathValue(null, topology, pvc, "accessModes", endpoint.getProperties().get("accessModes"));
+       log.debug ("Setting size to {}", endpoint.getProperties().get("storage"));
+       setNodePropertyPathValue(null, topology, pvc, "size", endpoint.getProperties().get("storage"));
+
+       Map<String, Object> matchLabels = new HashMap<String, Object>();
+       matchLabels.put("qname", endpoint.getProperties().get("qnamePV"));
+       Map<String, Object> selector = new HashMap<String, Object>();
+       selector.put("matchLabels", matchLabels);
+       log.debug ("Setting selector to {}", selector);
+       setNodePropertyPathValue(null, topology, pvc, "selector", new ComplexPropertyValue(selector));
+        
+
+       NodeTemplate deploy = TopologyNavigationUtil.getImmediateHostTemplate (topology, node);
+       log.debug ("Adding {} relation to {}", NormativeRelationshipConstants.HOSTED_ON, deploy.getName());
+       addRelationshipTemplate (null, topology, pvc, deploy.getName(), NormativeRelationshipConstants.HOSTED_ON,
+                                "host", "host");
+       log.debug ("Adding org.alien4cloud.relationships.MountDockerVolume relation to {}", node.getName());
+       RelationshipTemplate attach = addRelationshipTemplate (null, topology, pvc, node.getName(), 
+                                                              "org.alien4cloud.relationships.MountDockerVolume",
+                                                              "attachment", "attach");
+       log.debug ("Setting container_path to {}", connect.getProperties().get("mount_path"));
+       attach.getProperties().put("container_path", connect.getProperties().get("mount_path"));
+
+       log.debug ("Adding node {}:{} named {}", configuration.getPvNodeType(), configuration.getPvVersion(), pvName + "_PV");
+       NodeTemplate pvw = addNodeTemplate(null, topology, pvName + "_PV", configuration.getPvNodeType(), configuration.getPvVersion());
+       log.debug ("Setting qnameModule to {}", qnameModule);
+       setNodePropertyPathValue(null, topology, pvw, "qnameModule", new ScalarPropertyValue(qnameModule)); 
+       log.debug ("Setting qnamePV to {}", endpoint.getProperties().get("qnamePV"));
+       setNodePropertyPathValue(null, topology, pvw, "qnamePV", endpoint.getProperties().get("qnamePV")); 
+       
     }
 }
 
