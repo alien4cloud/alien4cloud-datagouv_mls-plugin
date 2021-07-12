@@ -799,13 +799,9 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        NodeTemplate pvc = addNodeTemplate(null, topology, pvName, K8S_TYPES_VOLUMES_CLAIM_SC, getK8SCsarVersion(topology));
        log.debug ("Setting name to {}", pvName.toLowerCase());
        setNodePropertyPathValue(null, topology, pvc, "name", new ScalarPropertyValue(pvName.toLowerCase())); 
-       String sc = configuration.getPvStorageClass();
-       if ((sc == null) || sc.trim().equals("")) {
-          sc = "eds-local-storage";
-       }
-       log.debug ("Setting storageClassName to {}", sc);
-       setNodePropertyPathValue(null, topology, pvc, "storageClassName", new ScalarPropertyValue(sc)); 
        Capability endpoint = safe(pv.getCapabilities()).get("pvk8s_endpoint");
+       log.debug ("Setting storageClassName to {}", endpoint.getProperties().get("storageClass"));
+       setNodePropertyPathValue(null, topology, pvc, "storageClassName", endpoint.getProperties().get("storageClass")); 
        log.debug ("Setting accessModes to {}", endpoint.getProperties().get("accessModes"));
        setNodePropertyPathValue(null, topology, pvc, "accessModes", endpoint.getProperties().get("accessModes"));
        log.debug ("Setting size to {}", endpoint.getProperties().get("storage"));

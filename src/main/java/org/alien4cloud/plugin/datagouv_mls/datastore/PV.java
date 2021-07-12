@@ -34,11 +34,13 @@ public class PV extends DataStore {
        String qname = "";
        String shortname = "";
        String accessModes = "";
+       String storageClass = "";
        Capability endpoint = safe(service.getCapabilities()).get("pvk8s_endpoint");
        if (endpoint != null) {
           qname = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("qnamePV"));
           shortname = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("shortname"));
           accessModes = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("accessModes"));
+          storageClass = PropertyUtil.getScalarValue(safe(endpoint.getProperties()).get("storageClass"));
        }
 
        if ((qname == null) || qname.trim().equals("")) {
@@ -55,6 +57,11 @@ public class PV extends DataStore {
           log.warn ("No accessModes set for " + service.getName());
           context.log().error("No accessModes set for " + service.getName());
        }
+
+       if ((storageClass == null) || storageClass.trim().equals("")) {
+          log.warn ("No storageClass set for " + service.getName());
+          context.log().error("No storageClass set for " + service.getName());
+       }
        Entity pv = new Entity();
        entities.put (String.valueOf(startGuid), pv);
        pv.setTypeName(getTypeName());
@@ -65,11 +72,7 @@ public class PV extends DataStore {
        attribs.setName(shortname);
        attribs.setQualifiedName(qname);
        attribs.setAccessModes(accessModes);
-       String sc = configuration.getPvStorageClass();
-       if ((sc == null) || sc.trim().equals("")) {
-          sc = "eds-local-storage";
-       }
-       attribs.setStorageClass(sc);
+       attribs.setStorageClass(storageClass);
        pv.setAttributes(attribs);
 
        return entities;
