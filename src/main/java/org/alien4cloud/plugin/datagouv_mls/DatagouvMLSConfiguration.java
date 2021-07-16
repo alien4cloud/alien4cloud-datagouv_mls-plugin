@@ -38,7 +38,4 @@ public class DatagouvMLSConfiguration {
     private String pdsIhmUrl;
 
     private String pvStorageClass;
-
-    private String pvNodeType = "artemis.pvk8s.pub.nodes.PVK8S";
-    private String pvVersion = "3.0-SNAPSHOT";
 }

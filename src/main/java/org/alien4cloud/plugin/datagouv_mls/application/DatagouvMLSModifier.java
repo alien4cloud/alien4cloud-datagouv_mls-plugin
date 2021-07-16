@@ -825,14 +825,6 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                                                               "attachment", "attach");
        log.debug ("Setting container_path to {}", connect.getProperties().get("mount_path"));
        attach.getProperties().put("container_path", connect.getProperties().get("mount_path"));
-
-       log.debug ("Adding node {}:{} named {}", configuration.getPvNodeType(), configuration.getPvVersion(), pvName + "_PV");
-       NodeTemplate pvw = addNodeTemplate(null, topology, pvName + "_PV", configuration.getPvNodeType(), configuration.getPvVersion());
-       log.debug ("Setting qnameModule to {}", qnameModule);
-       setNodePropertyPathValue(null, topology, pvw, "qnameModule", new ScalarPropertyValue(qnameModule)); 
-       log.debug ("Setting qnamePV to {}", endpoint.getProperties().get("qnamePV"));
-       setNodePropertyPathValue(null, topology, pvw, "qnamePV", endpoint.getProperties().get("qnamePV")); 
-       
     }
 }
 
