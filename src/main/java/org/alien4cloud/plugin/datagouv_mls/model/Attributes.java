@@ -29,6 +29,8 @@ public class Attributes {
 
    String status;
 
+   List<String> accessPointUser;
+
    Entity instanceOf;
 
    Entity memberOf;

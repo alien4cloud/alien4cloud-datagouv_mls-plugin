@@ -48,6 +48,7 @@ import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifi
 import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBECONTAINER;
 import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBE_SERVICE;
 import static org.alien4cloud.plugin.kubernetes.modifier.KubeTopologyUtils.K8S_TYPES_VOLUMES_CLAIM_SC;
+import static org.alien4cloud.plugin.portal.PortalConstants.PROXIED_SERVICE;
 import static alien4cloud.plugin.k8s.spark.jobs.modifier.SparkJobsModifier.K8S_TYPES_SPARK_JOBS;
 
 import org.springframework.stereotype.Component;
@@ -67,6 +68,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -267,6 +269,18 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         Map<String, List<NodeTemplate>> nodesToServices = new HashMap<String, List<NodeTemplate>>();
         Map<String, DataStore> servicesToDs = new HashMap<String, DataStore>();
 
+        /* get IHM services */
+        Set<NodeTemplate> modulesWithIhm = new HashSet<NodeTemplate>();
+        Set<NodeTemplate> ihmServices = TopologyNavigationUtil.getNodesOfType(topology, PROXIED_SERVICE, true);
+        for (NodeTemplate ihmService : ihmServices) {
+           RelationshipTemplate relation = TopologyNavigationUtil.getRelationshipFromType(ihmService, NormativeRelationshipConstants.CONNECTS_TO);
+           NodeTemplate module = topology.getNodeTemplates().get(relation.getTarget());
+           modulesWithIhm.add(module);
+        }
+
+        List<String> yes = new ArrayList<String>();
+        yes.add("Yes");
+
         /* process nodes */
         modules.forEach ( (nodeName, node) -> {
                 NodeType nodeType = ToscaContext.get(NodeType.class, node.getType());
@@ -296,6 +310,9 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
                 attribs.setQualifiedName(appliName + "-" + nodeName);
                 attribs.setStartTime(now);
                 attribs.setVersion(appVersion);
+                if (modulesWithIhm.contains(node)) {
+                   attribs.setAccessPointUser(yes);
+                }
                 Entity instance = new Entity();
                 instance.setTypeName(DatagouvMLSConstants.MODULE_NAME);
                 instance.setGuid(moduleGuid);
