@@ -49,6 +49,7 @@ import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifi
 import static org.alien4cloud.plugin.kubernetes.modifier.KubernetesAdapterModifier.K8S_TYPES_KUBE_SERVICE;
 import static org.alien4cloud.plugin.kubernetes.modifier.KubeTopologyUtils.K8S_TYPES_VOLUMES_CLAIM_SC;
 import static org.alien4cloud.plugin.portal.PortalConstants.PROXIED_SERVICE;
+import static alien4cloud.plugin.k8s.spark.jobs.modifier.SparkJobsModifier.K8S_SPARKJOBS_TYPES_VOLUMES_CLAIM_SC;
 import static alien4cloud.plugin.k8s.spark.jobs.modifier.SparkJobsModifier.K8S_TYPES_SPARK_JOBS;
 
 import org.springframework.stereotype.Component;
@@ -104,6 +105,8 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
 
     private static final String CUNAME_PROP = "Cas d'usage";
     private static final String BAS_PROP = "Bac à sable";
+
+    private static final String SPARKJOBS_CSAR_VERSION = "3.0.0";
 
     @Override
     @ToscaContextual
@@ -682,6 +685,15 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
         return K8S_CSAR_VERSION;
     }
 
+    private String getSparkJobsCsarVersion(Topology topology) {
+        for (CSARDependency dep : topology.getDependencies()) {
+            if (dep.getName().equals("org.alien4cloud.k8s.spark.jobs")) {
+                return dep.getVersion();
+            }
+        }
+        return SPARKJOBS_CSAR_VERSION;
+    }
+
     private String getMetaprop(NodeType node, String prop) {
         String propKey = metaPropertiesService.getMetapropertykeyByName(prop, MetaPropertyTarget.COMPONENT);
 
@@ -811,9 +823,21 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
     }
 
     private void processPV (Topology topology, NodeTemplate node, String qnameModule, RelationshipTemplate connect, NodeTemplate pv) {
+       NodeType nodeType = ToscaContext.get(NodeType.class, node.getType());
+       String volNodeType = null;
+       String version = null;
+       boolean isDeploy = true;
+       if (ToscaTypeUtils.isOfType(nodeType, K8S_TYPES_KUBECONTAINER)) {
+          volNodeType = K8S_TYPES_VOLUMES_CLAIM_SC;
+          version = getK8SCsarVersion(topology);
+       } else if (ToscaTypeUtils.isOfType(nodeType, K8S_TYPES_SPARK_JOBS)) {
+          volNodeType = K8S_SPARKJOBS_TYPES_VOLUMES_CLAIM_SC;
+          isDeploy = false;
+          version = getSparkJobsCsarVersion(topology);
+       }
        String pvName = node.getName() + pv.getName();
-       log.debug ("Adding node {} named {}", K8S_TYPES_VOLUMES_CLAIM_SC, pvName);
-       NodeTemplate pvc = addNodeTemplate(null, topology, pvName, K8S_TYPES_VOLUMES_CLAIM_SC, getK8SCsarVersion(topology));
+       log.debug ("Adding node {} named {}", volNodeType, pvName);
+       NodeTemplate pvc = addNodeTemplate(null, topology, pvName, volNodeType, version);
        log.debug ("Setting name to {}", pvName.toLowerCase());
        setNodePropertyPathValue(null, topology, pvc, "name", new ScalarPropertyValue(pvName.toLowerCase())); 
        Capability endpoint = safe(pv.getCapabilities()).get("pvk8s_endpoint");
@@ -831,11 +855,12 @@ public class DatagouvMLSModifier extends TopologyModifierSupport {
        log.debug ("Setting selector to {}", selector);
        setNodePropertyPathValue(null, topology, pvc, "selector", new ComplexPropertyValue(selector));
         
-
-       NodeTemplate deploy = TopologyNavigationUtil.getImmediateHostTemplate (topology, node);
-       log.debug ("Adding {} relation to {}", NormativeRelationshipConstants.HOSTED_ON, deploy.getName());
-       addRelationshipTemplate (null, topology, pvc, deploy.getName(), NormativeRelationshipConstants.HOSTED_ON,
-                                "host", "host");
+       if (isDeploy) {
+          NodeTemplate deploy = TopologyNavigationUtil.getImmediateHostTemplate (topology, node);
+          log.debug ("Adding {} relation to {}", NormativeRelationshipConstants.HOSTED_ON, deploy.getName());
+          addRelationshipTemplate (null, topology, pvc, deploy.getName(), NormativeRelationshipConstants.HOSTED_ON,
+                                   "host", "host");
+       }
        log.debug ("Adding org.alien4cloud.relationships.MountDockerVolume relation to {}", node.getName());
        RelationshipTemplate attach = addRelationshipTemplate (null, topology, pvc, node.getName(), 
                                                               "org.alien4cloud.relationships.MountDockerVolume",
