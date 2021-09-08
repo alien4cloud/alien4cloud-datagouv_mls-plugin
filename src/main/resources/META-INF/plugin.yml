@@ -29,3 +29,7 @@ component_descriptors:
     name: Datagouv-MLS / Meta Properties checker
     description: >
       Modifier to check that application mandatory metaproperties are set
+  - bean_name: property-suggestion-provider
+    name: Property suggestions provider
+    description: >
+      Suggest values got from URL
