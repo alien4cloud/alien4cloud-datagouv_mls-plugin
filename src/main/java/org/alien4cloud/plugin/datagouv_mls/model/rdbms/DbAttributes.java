@@ -14,4 +14,5 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DbAttributes extends Attributes {
    Entity instance;
+   String rdbms_type;   
 }

@@ -89,6 +89,7 @@ public class Impala extends DataStore {
            DbAttributes dbattribs = new DbAttributes();
            dbattribs.setName(databasename);
            dbattribs.setQualifiedName(databasename + "@" + instancename);
+           dbattribs.setRdbms_type("impala");
 
            Entity iinstance = new Entity();
            iinstance.setGuid(instanceGuid);
