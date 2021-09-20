@@ -27,6 +27,7 @@ public class SuggestionsConfiguration {
                                             "artemis.bec.pub.BecPythonSpark3Job").collect(Collectors.toList());
 
    private String property = "batchuser";
+   private String[] properties = {"batchuser", "batchuser1", "batchuser2", "batchuser3", "batchuser4", "batchuser5", "batchuser6", "batchuser7", "batchuser8", "batchuser9", "batchuser10"};
 
    private String[] defaultValues = {"user1", "user2"};
 

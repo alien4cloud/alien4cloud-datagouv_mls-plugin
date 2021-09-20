@@ -104,15 +104,18 @@ public class PropertySuggestionProvider implements IComplexSuggestionPluginProvi
           suggestionEntry.setEsIndex("toscaelement");
           suggestionEntry.setEsType("nodetype");
           suggestionEntry.setTargetElementId(nodetype);
-          suggestionEntry.setTargetProperty(configuration.getProperty());
           suggestionEntry.setSuggestionPolicy(SuggestionPolicy.Strict);
           suggestionEntry.setSuggestionHookPlugin("alien4cloud-datagouv_mls-plugin:property-suggestion-provider");
-          log.info("Adding suggestion entry {}", suggestionEntry.getId());
-          try {
-              suggestionService.createSuggestionEntry(suggestionEntry);
-          } catch (Exception e) {
-              log.error("Something wrong in suggestion configuration, ignoring " + suggestionEntry.getId(), e);
-          }          
+          for(String propIter : configuration.getProperties()) { 
+              suggestionEntry.setTargetProperty(propIter);
+              log.info("Adding suggestion entry {}", suggestionEntry.getId());
+              try {
+                suggestionService.createSuggestionEntry(suggestionEntry);
+              } catch (Exception e) {
+                log.error("Something wrong in suggestion configuration, ignoring " + suggestionEntry.getId(), e);
+              }
+          }
+          
        }
     }
 
