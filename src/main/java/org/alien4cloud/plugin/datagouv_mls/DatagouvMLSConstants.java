@@ -38,7 +38,8 @@ public class DatagouvMLSConstants {
         { "artemis.ceph.pub.capabilities.CephBucketEndpoint", Ceph.class },
         { "artemis.pvk8s.pub.capabilities.PVK8SEndpoint", PV.class },
         { "artemis.kudu.pub.capabilities.KuduEndpoint", Kudu.class },
-        { "artemis.impala.pub.capabilities.ImpalaEndpoint", Impala.class }
+        { "artemis.impala.pub.capabilities.ImpalaEndpoint", Impala.class },
+        { "artemis.janusgraph.pub.capabilities.JanusGraph", Janusgraph.class }
 
     }).collect(Collectors.toMap(data -> (String) data[0], data -> (Class) data[1]));
 
