@@ -6,7 +6,7 @@
     <version>3.4.0-SNAPSHOT</version>
   </parent>
   <artifactId>alien4cloud-datagouv_mls-plugin</artifactId>
-  <version>3.5.0-SNAPSHOT</version>
+  <version>3.4.0-SNAPSHOT</version>
   <name>Alien 4 Cloud Datagouv-MLS plugin</name>
   <description>This plugin is used to publish info to Datagouv-MLS</description>
 
